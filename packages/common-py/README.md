@@ -17,6 +17,7 @@ The `agentdock-common` package provides the foundation layer for AgentDock, offe
 - **Validation Utilities**: Reusable input validation functions
 - **Authentication Utilities**: API key management and permission checking
 - **HTTP Models**: Standard response formats for APIs
+- **Application Logger**: Structured logging with JSON output and correlation IDs
 
 ## Usage
 
@@ -116,6 +117,39 @@ return paginated_response(
 )
 ```
 
+### Application Logging
+
+```python
+from agentdock_common import get_logger, set_request_id
+
+# Create logger for your service
+logger = get_logger("controller")
+
+# Simple logging
+logger.info("Service started", port=5001, version="1.0.0")
+logger.error("Database connection failed", error=str(e), host="localhost")
+logger.debug("Processing item", item_id="123", count=5)
+
+# Logging with request context
+set_request_id("req-abc-123")  # Set correlation ID
+logger.info("Received request")  # Automatically includes request_id
+
+# Persistent context (great for request handlers)
+request_logger = logger.with_context(request_id="req-abc-123", user_id="user-456")
+request_logger.info("Processing request")  # Includes both IDs
+request_logger.info("Request complete")    # Also includes both IDs
+
+# Exception logging with stack trace
+try:
+    risky_operation()
+except Exception as e:
+    logger.exception("Operation failed", operation="risky")
+
+# Output (JSON for easy parsing by ELK, Loki, CloudWatch):
+# {"timestamp": "2024-11-11T10:30:00Z", "level": "INFO", "service": "controller",
+#  "request_id": "req-abc-123", "message": "Processing request", "user_id": "user-456"}
+```
+
 ## API Reference
 
 ### Error Classes
@@ -193,6 +227,28 @@ return paginated_response(
 | `error_response(exception)` | Create error response | `{"success": False, "error": ..., "code": ...}` |
 | `paginated_response(items, total, page, page_size)` | Create paginated response | Dict with pagination metadata |
 | `health_response(service, version, status)` | Create health check response | Health check dict |
+
+### Logger Functions
+
+| Function | Description | Returns |
+|----------|-------------|---------|
+| `get_logger(service_name, log_level)` | Create a logger for a service | `AgentDockLogger` |
+| `configure_logging(service_name, log_level)` | Configure and get logger | `AgentDockLogger` |
+| `set_request_id(request_id)` | Set correlation ID for current context | None |
+| `get_request_id()` | Get current correlation ID | `str` or `None` |
+| `clear_request_id()` | Clear correlation ID | None |
+
+#### AgentDockLogger Methods
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `info(msg, **context)` | Log info message | `logger.info("Started", port=8080)` |
+| `error(msg, **context)` | Log error message | `logger.error("Failed", error=str(e))` |
+| `debug(msg, **context)` | Log debug message | `logger.debug("Details", data={})` |
+| `warning(msg, **context)` | Log warning message | `logger.warning("High load", cpu=90)` |
+| `critical(msg, **context)` | Log critical message | `logger.critical("Shutdown")` |
+| `exception(msg, **context)` | Log exception with stack trace | `logger.exception("Error occurred")` |
+| `with_context(**ctx)` | Create logger with persistent context | `logger.with_context(user_id="123")` |
 
 ## Dependencies
 

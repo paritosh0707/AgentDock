@@ -125,6 +125,16 @@ from .http_models import (
     health_response,
 )
 
+# Logger
+from .logger import (
+    AgentDockLogger,
+    get_logger,
+    configure_logging,
+    set_request_id,
+    get_request_id,
+    clear_request_id,
+)
+
 __version__ = "0.1.0"
 
 __all__ = [
@@ -221,4 +231,11 @@ __all__ = [
     "error_response",
     "paginated_response",
     "health_response",
+    # Logger
+    "AgentDockLogger",
+    "get_logger",
+    "configure_logging",
+    "set_request_id",
+    "get_request_id",
+    "clear_request_id",
 ]
