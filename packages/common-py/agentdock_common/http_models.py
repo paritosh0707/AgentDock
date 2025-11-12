@@ -12,7 +12,7 @@ Usage:
 """
 
 from typing import Any, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from .errors import AgentDockError
 
@@ -33,8 +33,8 @@ class APIResponse(BaseModel):
     success: bool = True
     data: Any
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "success": True,
@@ -46,6 +46,7 @@ class APIResponse(BaseModel):
                 }
             ]
         }
+    )
 
 
 class ErrorResponse(BaseModel):
@@ -66,8 +67,8 @@ class ErrorResponse(BaseModel):
     error: str
     code: str
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "success": False,
@@ -76,6 +77,7 @@ class ErrorResponse(BaseModel):
                 }
             ]
         }
+    )
 
 
 class PaginatedResponse(BaseModel):
@@ -120,8 +122,8 @@ class PaginatedResponse(BaseModel):
         """Check if there is a previous page"""
         return self.page > 1
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "success": True,
@@ -135,6 +137,7 @@ class PaginatedResponse(BaseModel):
                 }
             ]
         }
+    )
 
 
 def success_response(data: Any) -> dict:
@@ -247,8 +250,8 @@ class HealthResponse(BaseModel):
     version: str
     timestamp: float
     
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "examples": [
                 {
                     "status": "ok",
@@ -258,6 +261,7 @@ class HealthResponse(BaseModel):
                 }
             ]
         }
+    )
 
 
 def health_response(service: str, version: str, status: str = "ok") -> dict:

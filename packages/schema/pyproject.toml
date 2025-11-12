@@ -1,9 +1,19 @@
 [project]
 name = "agentdock-schema"
 version = "0.1.0"
-description = "Dockfile v1 models and validators"
+description = "Dockfile schema and validation for AgentDock"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.5", "pyyaml>=6.0"]
+dependencies = [
+    "pydantic>=2.5",
+    "agentdock-common",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pyyaml>=6.0",  # For serialization utilities (to_yaml_string)
+    "pytest>=7.4",
+    "pytest-cov>=4.1",
+]
 
 [build-system]
 requires = ["setuptools"]

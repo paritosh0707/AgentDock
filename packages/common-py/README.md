@@ -252,7 +252,7 @@ except Exception as e:
 
 ## Dependencies
 
-- `pydantic >= 2.5`: For HTTP response models
+- `pydantic >= 2.5`: For HTTP response models (fully compatible with Pydantic V2, uses `ConfigDict`)
 
 ## Development
 
@@ -271,10 +271,12 @@ mypy agentdock_common/
 
 ## Design Principles
 
-1. **Pure Utilities**: No I/O operations, no side effects
-2. **Zero Internal Dependencies**: Foundation layer, doesn't depend on other AgentDock packages
-3. **Minimal**: Only what's shared by 3+ packages
-4. **Stable**: API designed for backward compatibility
+1. **Single Source of Truth**: Constants defined here are used by all other packages
+2. **Pure Utilities**: No I/O operations, no side effects
+3. **Zero Internal Dependencies**: Foundation layer, doesn't depend on other AgentDock packages
+4. **Minimal**: Only what's shared by 3+ packages
+5. **Stable**: API designed for backward compatibility
+6. **Modern**: Uses Pydantic V2 best practices (ConfigDict, no deprecated features)
 
 ## Future Extensions
 
