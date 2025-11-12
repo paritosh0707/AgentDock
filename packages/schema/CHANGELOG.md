@@ -84,6 +84,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (November 12, 2024 - Dependency Versioning)
+- **Updated agentdock-common dependency** to use proper version constraints
+- Changed from `agentdock-common` (unversioned) to `agentdock-common>=0.1.1,<0.2.0`
+- Ensures compatibility with common v0.1.x (ConfigDict support)
+- Blocks potentially breaking v0.2.0 until schema is tested against it
+- See `docs/PACKAGE_VERSIONING_STRATEGY.md` for upgrade guidelines
+
 ### Added (November 12, 2024 - I/O Schema Enhancement)
 
 #### Comprehensive I/O Schema Validation

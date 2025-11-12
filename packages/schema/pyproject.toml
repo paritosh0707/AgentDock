@@ -5,7 +5,7 @@ description = "Dockfile schema and validation for AgentDock"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.5",
-    "agentdock-common",
+    "agentdock-common>=0.1.1,<0.2.0",
 ]
 
 [project.optional-dependencies]

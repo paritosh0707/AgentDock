@@ -1,6 +1,6 @@
 [project]
 name = "agentdock-common"
-version = "0.1.0"
+version = "0.1.1"
 description = "Common utilities for AgentDock"
 requires-python = ">=3.12"
 dependencies = ["pydantic>=2.5"]
