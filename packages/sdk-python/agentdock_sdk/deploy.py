@@ -198,8 +198,10 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
     if use_uv:
         print("  Using uv package manager (fast!)...")
         try:
+            # Note: Don't use --system flag for local dev (requires admin/root)
+            # uv will automatically use the active virtual environment
             subprocess.check_call(
-                ["uv", "pip", "install", "--system", "-r", "requirements.txt", "-q"],
+                ["uv", "pip", "install", "-r", "requirements.txt", "-q"],
                 cwd=str(runtime_dir),
                 stdout=subprocess.DEVNULL
             )
