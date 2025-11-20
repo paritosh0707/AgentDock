@@ -342,7 +342,9 @@ def _render_runtime(spec: DockSpec) -> str:
         agentdock packages. It directly loads and invokes the agent.
     """
     # Serialize spec for embedding in runtime
-    spec_json = json.dumps(spec.model_dump(), indent=2)
+    # Use exclude_none=True to avoid validation issues with None values
+    # Use mode='json' to ensure JSON-serializable output
+    spec_json = json.dumps(spec.model_dump(exclude_none=True, mode='json'), indent=2)
     
     # Determine if we need policy engine
     has_policies = spec.policies is not None
