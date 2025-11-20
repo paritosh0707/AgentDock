@@ -225,7 +225,7 @@ COPY .agentdock_runtime/main.py /app/main.py
 COPY .agentdock_runtime/requirements.txt /app/requirements.txt
 
 # Install dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
 EXPOSE {port}
 
