@@ -180,14 +180,18 @@ def _generate_requirements(spec: DockSpec) -> str:
         
     Returns:
         requirements.txt content as string
+        
+    Note:
+        For Docker builds, we only include publicly available packages.
+        Internal AgentDock packages (common, adapters, schema, policy) are
+        not included as they're not published to PyPI yet. The runtime code
+        is self-contained and doesn't require these packages.
     """
     requirements = [
         "fastapi>=0.104.0",
         "uvicorn>=0.24.0",
         "prometheus-client>=0.19.0",
-        "agentdock-common>=0.1.0",
-        "agentdock-adapters>=0.1.0",
-        "agentdock-schema>=0.1.0"
+        "pydantic>=2.0.0"
     ]
     
     # Add framework-specific dependencies
@@ -198,9 +202,7 @@ def _generate_requirements(spec: DockSpec) -> str:
     elif framework == "langchain":
         requirements.append("langchain>=0.1.0")
     
-    # Add policy engine if policies are defined
-    if spec.policies:
-        requirements.append("agentdock-policy>=0.1.0")
+    # Note: Policy engine support will be added in V1.1+ when packages are published
     
     return "\n".join(requirements) + "\n"
 
@@ -216,9 +218,21 @@ def _render_dockerfile(spec: DockSpec) -> str:
     """
     port = spec.expose.port if spec.expose else 8080
     
+    # Extract module path from entrypoint to copy agent code
+    entrypoint = spec.agent.entrypoint
+    if ":" in entrypoint:
+        module_path = entrypoint.rsplit(":", 1)[0]
+        # Convert module path to directory path (e.g., "app.graph" -> "app/")
+        agent_dir = module_path.split(".")[0]
+    else:
+        agent_dir = "app"
+    
     return f"""FROM python:3.11-slim
 
 WORKDIR /app
+
+# Copy agent code
+COPY {agent_dir}/ /app/{agent_dir}/
 
 # Copy runtime files
 COPY .agentdock_runtime/main.py /app/main.py
@@ -241,12 +255,19 @@ def _render_runtime(spec: DockSpec) -> str:
         
     Returns:
         Python code as string
+        
+    Note:
+        The generated runtime is self-contained and doesn't depend on
+        agentdock packages. It directly loads and invokes the agent.
     """
     # Serialize spec for embedding in runtime
     spec_json = json.dumps(spec.model_dump(), indent=2)
     
     # Determine if we need policy engine
     has_policies = spec.policies is not None
+    
+    # Get entrypoint details
+    entrypoint = spec.agent.entrypoint
     
     # Build runtime code
     code = f'''"""
@@ -255,12 +276,13 @@ Agent: {spec.agent.name}
 Framework: {spec.agent.framework}
 """
 import os
+import sys
 import time
+import importlib
 from typing import Dict, Any
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
-from agentdock_adapters import get_adapter
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -272,9 +294,24 @@ app = FastAPI(
 # Load agent specification
 SPEC = {spec_json}
 
-# Initialize adapter and load agent
-adapter = get_adapter(SPEC["agent"]["framework"])
-adapter.load(SPEC["agent"]["entrypoint"])
+# Load agent dynamically
+def load_agent():
+    """Load the agent from the entrypoint."""
+    entrypoint = "{entrypoint}"
+    if ":" not in entrypoint:
+        raise ValueError(f"Invalid entrypoint format: {{entrypoint}}. Expected 'module:function'")
+    
+    module_path, func_name = entrypoint.rsplit(":", 1)
+    
+    try:
+        module = importlib.import_module(module_path)
+        build_func = getattr(module, func_name)
+        return build_func()
+    except Exception as e:
+        raise RuntimeError(f"Failed to load agent from {{entrypoint}}: {{e}}")
+
+# Initialize agent
+agent = load_agent()
 
 '''
     
@@ -326,7 +363,13 @@ async def invoke(request: Request):
         
         # Invoke agent
         start_time = time.time()
-        result = adapter.invoke(payload)
+        # For LangGraph agents, invoke with the payload
+        if hasattr(agent, 'invoke'):
+            result = agent.invoke(payload)
+        elif callable(agent):
+            result = agent(payload)
+        else:
+            raise RuntimeError("Agent is not callable")
         latency = time.time() - start_time
 '''
     
