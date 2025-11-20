@@ -10,10 +10,48 @@ from agentdock_schema import DockSpec
 from agentdock_common.errors import AgentDockError
 
 
+def _check_uv_available() -> bool:
+    """Check if uv package manager is available.
+    
+    Returns:
+        True if uv is available, False otherwise
+    """
+    try:
+        subprocess.check_output(
+            ["uv", "--version"],
+            stderr=subprocess.STDOUT,
+            text=True
+        )
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+
+def _print_uv_setup_instructions():
+    """Print instructions for installing uv package manager."""
+    print("\n" + "="*70)
+    print("⚠️  UV Package Manager Not Found")
+    print("="*70)
+    print("\nAgentDock uses 'uv' for fast, reliable package management.")
+    print("\n📦 Quick Setup (recommended):")
+    print("\n  On macOS/Linux:")
+    print("    curl -LsSf https://astral.sh/uv/install.sh | sh")
+    print("\n  On Windows:")
+    print("    powershell -c \"irm https://astral.sh/uv/install.ps1 | iex\"")
+    print("\n  Using pip:")
+    print("    pip install uv")
+    print("\n  Using pipx:")
+    print("    pipx install uv")
+    print("\n📚 Learn more: https://github.com/astral-sh/uv")
+    print("\n💡 Note: Docker builds will still work (uv is installed in the container)")
+    print("   but local development benefits from having uv installed.")
+    print("="*70 + "\n")
+
+
 def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any]:
     """Deploy an agent to a target environment.
     
-    V1 Implementation: Builds a Docker image locally
+    V1 Implementation: Builds a Docker image locally using uv package manager
     V1.1+: Will support remote deployment via Controller
     
     Args:
@@ -37,6 +75,11 @@ def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any
         >>> print(result["image"])
         agentdock/invoice-copilot:dev
     """
+    # Check if uv is available (informational only - Docker will install it)
+    if not _check_uv_available():
+        _print_uv_setup_instructions()
+        print("ℹ️  Continuing with Docker build (uv will be installed in container)...\n")
+    
     # Load and validate Dockfile
     try:
         spec = load_dockspec(dockfile_path)
@@ -146,16 +189,32 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
     with open(req_file, "w", encoding="utf-8") as f:
         f.write(requirements)
     
-    # Install dependencies
+    # Install dependencies using uv (if available) or pip
     print("Installing dependencies...")
-    try:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "-q"],
-            cwd=str(runtime_dir),
-            stdout=subprocess.DEVNULL
-        )
-    except subprocess.CalledProcessError as e:
-        raise AgentDockError(f"Failed to install dependencies: {str(e)}")
+    
+    # Check if uv is available
+    use_uv = _check_uv_available()
+    
+    if use_uv:
+        print("  Using uv package manager (fast!)...")
+        try:
+            subprocess.check_call(
+                ["uv", "pip", "install", "--system", "-r", "requirements.txt", "-q"],
+                cwd=str(runtime_dir),
+                stdout=subprocess.DEVNULL
+            )
+        except subprocess.CalledProcessError as e:
+            raise AgentDockError(f"Failed to install dependencies with uv: {str(e)}")
+    else:
+        print("  Using pip (consider installing uv for faster installs)...")
+        try:
+            subprocess.check_call(
+                [sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "-q"],
+                cwd=str(runtime_dir),
+                stdout=subprocess.DEVNULL
+            )
+        except subprocess.CalledProcessError as e:
+            raise AgentDockError(f"Failed to install dependencies with pip: {str(e)}")
     
     # Start the server
     host = spec.expose.host if spec.expose else "0.0.0.0"
@@ -232,6 +291,15 @@ def _render_dockerfile(spec: DockSpec) -> str:
 
 WORKDIR /app
 
+# Install uv package manager (fast, reliable Python package installer)
+# https://github.com/astral-sh/uv
+RUN apt-get update && apt-get install -y curl && \\
+    curl -LsSf https://astral.sh/uv/install.sh | sh && \\
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Add uv to PATH (installed to /root/.local/bin)
+ENV PATH="/root/.local/bin:$PATH"
+
 # Copy AgentDock packages (to be installed locally)
 COPY packages/common-py/ /agentdock_packages/common-py/
 COPY packages/schema/ /agentdock_packages/schema/
@@ -244,13 +312,13 @@ COPY {agent_dir}/ /app/{agent_dir}/
 COPY .agentdock_runtime/main.py /app/main.py
 COPY .agentdock_runtime/requirements.txt /app/requirements.txt
 
-# Install AgentDock packages first (from local copies)
-RUN pip install --no-cache-dir -e /agentdock_packages/common-py && \\
-    pip install --no-cache-dir -e /agentdock_packages/schema && \\
-    pip install --no-cache-dir -e /agentdock_packages/adapters
+# Install AgentDock packages first (from local copies) using uv
+RUN uv pip install --system -e /agentdock_packages/common-py && \\
+    uv pip install --system -e /agentdock_packages/schema && \\
+    uv pip install --system -e /agentdock_packages/adapters
 
-# Install other dependencies
-RUN pip install --no-cache-dir -r /app/requirements.txt
+# Install other dependencies using uv
+RUN uv pip install --system -r /app/requirements.txt
 
 EXPOSE {port}
 
