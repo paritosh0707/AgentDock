@@ -1,6 +1,6 @@
 # Schema Package - Edge Cases and Validation Coverage
 
-Comprehensive documentation of validation edge cases handled by the `agentdock-schema` package.
+Comprehensive documentation of validation edge cases handled by the `dockrion-schema` package.
 
 ---
 
@@ -592,7 +592,7 @@ Potential edge cases to add:
 
 - JSON Schema Specification: https://json-schema.org/
 - Pydantic Validators: https://docs.pydantic.dev/latest/concepts/validators/
-- **AgentDock Constants**: [`constants.py`](../packages/common-py/agentdock_common/constants.py)
+- **Dockrion Constants**: [`constants.py`](../packages/common-py/dockrion_common/constants.py)
 - **Test Suites**:
   - [`test_models.py`](../../packages/schema/tests/test_models.py)
   - [`test_edge_cases.py`](../../packages/schema/tests/test_edge_cases.py)

@@ -1,6 +1,6 @@
 # Common Package Implementation Plan
 
-**Package:** `packages/common-py/agentdock_common`  
+**Package:** `packages/common-py/dockrion_common`  
 **Version:** 1.0  
 **Status:** Implementation Plan  
 **Last Updated:** November 11, 2024
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The `common` package is the **foundation layer** of AgentDock, providing shared utilities and primitives used across all packages and services. This document outlines what will be built, how it will be implemented, and how it scales for future versions.
+The `common` package is the **foundation layer** of Dockrion, providing shared utilities and primitives used across all packages and services. This document outlines what will be built, how it will be implemented, and how it scales for future versions.
 
 **Key Principles:**
 - ✅ Minimal for V1 (only what's truly needed)
@@ -77,7 +77,7 @@ The `common` package is the **foundation layer** of AgentDock, providing shared 
 
 ```
 packages/common-py/
-├── agentdock_common/
+├── dockrion_common/
 │   ├── __init__.py              # Public API exports
 │   ├── errors.py                # Exception classes
 │   ├── constants.py             # Shared constants
@@ -210,12 +210,12 @@ packages/common-py/
 
 ### 1. errors.py
 
-**Purpose:** Standardized exception classes for all AgentDock packages
+**Purpose:** Standardized exception classes for all Dockrion packages
 
 **Design:**
 ```python
 # Base hierarchy
-AgentDockError (base)
+DockrionError (base)
 ├── ValidationError
 ├── AuthError
 │   └── RateLimitError
@@ -226,8 +226,8 @@ AgentDockError (base)
 
 **Implementation:**
 ```python
-class AgentDockError(Exception):
-    """Base exception for all AgentDock errors"""
+class DockrionError(Exception):
+    """Base exception for all Dockrion errors"""
     def __init__(self, message: str, code: str = "INTERNAL_ERROR"):
         self.message = message
         self.code = code
@@ -237,12 +237,12 @@ class AgentDockError(Exception):
         """Serialize to dict for API responses"""
         return {"error": self.__class__.__name__, "code": self.code, "message": self.message}
 
-class ValidationError(AgentDockError):
+class ValidationError(DockrionError):
     """Invalid input or configuration"""
     def __init__(self, message: str):
         super().__init__(message, code="VALIDATION_ERROR")
 
-class AuthError(AgentDockError):
+class AuthError(DockrionError):
     """Authentication/authorization failed"""
     def __init__(self, message: str):
         super().__init__(message, code="AUTH_ERROR")
@@ -253,17 +253,17 @@ class RateLimitError(AuthError):
         super().__init__(message)
         self.code = "RATE_LIMIT_EXCEEDED"
 
-class NotFoundError(AgentDockError):
+class NotFoundError(DockrionError):
     """Resource not found"""
     def __init__(self, message: str):
         super().__init__(message, code="NOT_FOUND")
 
-class ConflictError(AgentDockError):
+class ConflictError(DockrionError):
     """Resource conflict (e.g., duplicate)"""
     def __init__(self, message: str):
         super().__init__(message, code="CONFLICT")
 
-class ServiceUnavailableError(AgentDockError):
+class ServiceUnavailableError(DockrionError):
     """Service temporarily unavailable"""
     def __init__(self, message: str):
         super().__init__(message, code="SERVICE_UNAVAILABLE")
@@ -271,7 +271,7 @@ class ServiceUnavailableError(AgentDockError):
 
 **Usage:**
 ```python
-from agentdock_common.errors import ValidationError, AuthError
+from dockrion_common.errors import ValidationError, AuthError
 
 if not valid:
     raise ValidationError("Invalid entrypoint format")
@@ -291,7 +291,7 @@ if not valid:
 **Design:**
 ```python
 # Version info
-AGENTDOCK_VERSION = "1.0"
+dockrion_VERSION = "1.0"
 SUPPORTED_DOCKFILE_VERSIONS = ["1.0"]
 
 # Supported values (must match schema)
@@ -332,7 +332,7 @@ DEFAULT_RATE_LIMIT = "100/m"
 
 **Usage:**
 ```python
-from agentdock_common.constants import SUPPORTED_FRAMEWORKS, PERMISSIONS
+from dockrion_common.constants import SUPPORTED_FRAMEWORKS, PERMISSIONS
 
 if framework not in SUPPORTED_FRAMEWORKS:
     raise ValidationError(f"Unsupported framework: {framework}")
@@ -394,7 +394,7 @@ def sanitize_input(text: str, max_length: int | None = None) -> str:
 
 **Usage:**
 ```python
-from agentdock_common.validation import validate_entrypoint, parse_rate_limit
+from dockrion_common.validation import validate_entrypoint, parse_rate_limit
 
 module, func = validate_entrypoint("app.main:build_graph")
 count, seconds = parse_rate_limit("1000/m")
@@ -452,7 +452,7 @@ def check_permission(user_permissions: list[str], required: str) -> bool:
 
 **Usage:**
 ```python
-from agentdock_common.auth_utils import generate_api_key, validate_api_key
+from dockrion_common.auth_utils import generate_api_key, validate_api_key
 
 new_key = generate_api_key()
 validate_api_key(request.headers.get("X-API-Key"), expected_key)
@@ -502,7 +502,7 @@ def error_response(error: Exception) -> dict:
 
 **Usage:**
 ```python
-from agentdock_common.http_models import success_response, error_response
+from dockrion_common.http_models import success_response, error_response
 
 return success_response({"id": "123", "status": "running"})
 return error_response(ValidationError("Invalid input"))
@@ -697,7 +697,7 @@ class ServiceClient:
 
 ### Technical Metrics
 
-- ✅ **Zero internal dependencies:** Common doesn't import other AgentDock packages
+- ✅ **Zero internal dependencies:** Common doesn't import other Dockrion packages
 - ✅ **>95% test coverage:** All functions tested
 - ✅ **<100ms import time:** Fast to import
 - ✅ **Type hints:** 100% type coverage (mypy strict)
@@ -746,11 +746,11 @@ redis = [
 ## Public API (__init__.py)
 
 ```python
-# agentdock_common/__init__.py
+# dockrion_common/__init__.py
 
 # Errors
 from .errors import (
-    AgentDockError,
+    DockrionError,
     ValidationError,
     AuthError,
     RateLimitError,
@@ -761,7 +761,7 @@ from .errors import (
 
 # Constants
 from .constants import (
-    AGENTDOCK_VERSION,
+    dockrion_VERSION,
     SUPPORTED_FRAMEWORKS,
     SUPPORTED_PROVIDERS,
     SUPPORTED_AUTH_MODES,
@@ -799,7 +799,7 @@ from .http_models import (
 __version__ = "0.1.0"
 __all__ = [
     # Errors
-    "AgentDockError",
+    "DockrionError",
     "ValidationError",
     "AuthError",
     "RateLimitError",
@@ -807,7 +807,7 @@ __all__ = [
     "ConflictError",
     "ServiceUnavailableError",
     # Constants
-    "AGENTDOCK_VERSION",
+    "dockrion_VERSION",
     "SUPPORTED_FRAMEWORKS",
     "SUPPORTED_PROVIDERS",
     "SUPPORTED_AUTH_MODES",
@@ -912,7 +912,7 @@ __all__ = [
 
 ## Conclusion
 
-The common package is the **foundation** of AgentDock. By keeping it minimal, pure, and well-tested, we ensure:
+The common package is the **foundation** of Dockrion. By keeping it minimal, pure, and well-tested, we ensure:
 
 - ✅ Fast development (other teams can start immediately)
 - ✅ Consistent behavior (shared utilities prevent bugs)

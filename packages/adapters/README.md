@@ -1,8 +1,8 @@
-# AgentDock Adapters Package
+# Dockrion Adapters Package
 
-**Framework abstraction layer for AgentDock**
+**Framework abstraction layer for Dockrion**
 
-Provides uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling AgentDock runtime to invoke any agent type through a consistent API.
+Provides uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling Dockrion runtime to invoke any agent type through a consistent API.
 
 ---
 
@@ -35,7 +35,7 @@ pip install -e ".[all]"         # All frameworks
 ### Basic Usage
 
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 # 1. Get adapter for framework
 adapter = get_adapter("langgraph")
@@ -56,7 +56,7 @@ print(result)
 ### Advanced: Strict Validation & Config Support
 
 ```python
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 # Enable strict type validation (requires langgraph installed)
 adapter = LangGraphAdapter(strict_validation=True)
@@ -81,11 +81,11 @@ result = adapter.invoke(
 
 ### The Adapter Pattern
 
-Adapters act as **translation layers** between AgentDock and various frameworks:
+Adapters act as **translation layers** between Dockrion and various frameworks:
 
 ```
 ┌──────────────────────────────────────┐
-│      AgentDock Runtime               │
+│      Dockrion Runtime               │
 │  (Framework Agnostic)                │
 └────────────┬─────────────────────────┘
              │
@@ -293,7 +293,7 @@ def get_adapter(framework: str) -> AgentAdapter:
 ### Example 1: Basic Invocation
 
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 # Load LangGraph agent
 adapter = get_adapter("langgraph")
@@ -307,8 +307,8 @@ print(result["vendor"])
 ### Example 2: Error Handling
 
 ```python
-from agentdock_adapters import get_adapter
-from agentdock_adapters.errors import AdapterLoadError, AgentExecutionError
+from dockrion_adapters import get_adapter
+from dockrion_adapters.errors import AdapterLoadError, AgentExecutionError
 
 adapter = get_adapter("langgraph")
 
@@ -360,7 +360,7 @@ result = invoke_any_agent("langchain", "app.lc:build", payload)
 ### Package Structure
 
 ```
-agentdock_adapters/
+dockrion_adapters/
 ├── __init__.py           # Public API
 ├── base.py               # AgentAdapter protocol
 ├── langgraph_adapter.py  # LangGraph implementation
@@ -390,7 +390,7 @@ pytest tests/ -v
 ### Test Coverage
 
 ```bash
-pytest tests/ --cov=agentdock_adapters --cov-report=html
+pytest tests/ --cov=dockrion_adapters --cov-report=html
 ```
 
 ### Test with Real Agent
@@ -555,7 +555,7 @@ AdapterNotLoadedError: Adapter not loaded. Call .load(entrypoint) first.
 
 1. **Implement the protocol:**
 ```python
-# agentdock_adapters/myframework_adapter.py
+# dockrion_adapters/myframework_adapter.py
 
 from .base import AgentAdapter
 
@@ -571,7 +571,7 @@ class MyFrameworkAdapter(AgentAdapter):
 
 2. **Register in factory:**
 ```python
-# agentdock_adapters/registry.py
+# dockrion_adapters/registry.py
 
 _ADAPTERS = {
     "langgraph": LangGraphAdapter,
@@ -599,7 +599,7 @@ pytest tests/ -v
 pytest tests/test_langgraph_adapter.py -v
 
 # With coverage
-pytest tests/ --cov=agentdock_adapters --cov-report=term-missing
+pytest tests/ --cov=dockrion_adapters --cov-report=term-missing
 ```
 
 ---
@@ -676,7 +676,7 @@ See repository LICENSE file.
 
 ---
 
-**Maintained by:** AgentDock Development Team  
-**Issues:** [GitHub Issues](https://github.com/paritosh0707/AgentDock/issues)  
-**Slack:** #agentdock-dev
+**Maintained by:** Dockrion Development Team  
+**Issues:** [GitHub Issues](https://github.com/paritosh0707/Dockrion/issues)  
+**Slack:** #dockrion-dev
 

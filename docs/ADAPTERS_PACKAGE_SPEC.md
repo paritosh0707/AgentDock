@@ -1,4 +1,4 @@
-# AgentDock Adapters Package Specification
+# Dockrion Adapters Package Specification
 
 **Version:** 1.0  
 **Last Updated:** November 14, 2024  
@@ -26,7 +26,7 @@
 ## Purpose & Overview
 
 ### One-Sentence Summary
-**The Adapters package provides a uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling AgentDock runtime to invoke any agent type through a consistent API.**
+**The Adapters package provides a uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling Dockrion runtime to invoke any agent type through a consistent API.**
 
 ### The Problem It Solves
 
@@ -46,7 +46,7 @@ crew = create_crew()
 result = crew.kickoff(inputs={"query": "hello"})
 ```
 
-**AgentDock runtime needs ONE unified way to call agents regardless of framework!**
+**Dockrion runtime needs ONE unified way to call agents regardless of framework!**
 
 ### The Solution
 
@@ -58,7 +58,7 @@ Adapters act as **translation layers** (middleware) that:
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│         AgentDock Runtime (Framework Agnostic)      │
+│         Dockrion Runtime (Framework Agnostic)      │
 │                                                      │
 │  adapter = get_adapter(framework)  # ← Factory      │
 │  adapter.load(entrypoint)          # ← Load agent   │
@@ -149,7 +149,7 @@ def get_adapter(framework: str) -> AgentAdapter:
 
 ### 3. Dynamic Agent Loading
 
-User's agent code lives in their project, not in AgentDock:
+User's agent code lives in their project, not in Dockrion:
 
 ```python
 # User's code (examples/invoice_copilot/app/graph.py)
@@ -215,7 +215,7 @@ adapter.load("examples.invoice_copilot.app.graph:build_graph")
 - ✅ Framework-specific adapter implementations
 - ✅ Adapter registry/factory (`get_adapter()`)
 - ✅ Dynamic agent loading logic
-- ✅ Framework error → AgentDock error translation
+- ✅ Framework error → Dockrion error translation
 
 **Adapters Package DOES NOT Own:**
 - ❌ User's agent code (that's user's project)
@@ -431,11 +431,11 @@ def get_metadata(self) -> Dict[str, Any]:
 ---
 
 #### 4. Error Normalization
-**Purpose:** Convert framework-specific errors to AgentDock errors
+**Purpose:** Convert framework-specific errors to Dockrion errors
 
 **Error Hierarchy:**
 ```
-AgentDockError (from common)
+DockrionError (from common)
 └── AdapterError
     ├── AdapterLoadError
     │   ├── ModuleNotFoundError
@@ -684,7 +684,7 @@ output = {
 **Class Structure:**
 ```python
 from typing import Dict, Any, Optional, Iterator
-from agentdock_common import get_logger, ValidationError
+from dockrion_common import get_logger, ValidationError
 from .base import AgentAdapter
 
 logger = get_logger("langgraph-adapter")
@@ -885,7 +885,7 @@ def get_adapter(framework: str) -> AgentAdapter:
 ### Error Classes
 
 ```python
-class AdapterError(AgentDockError):
+class AdapterError(DockrionError):
     """Base class for adapter errors"""
     pass
 
@@ -1126,8 +1126,8 @@ def build_stateful_graph():
 ```python
 # Generated runtime.py
 
-from agentdock_adapters import get_adapter
-from agentdock_common import success_response, error_response
+from dockrion_adapters import get_adapter
+from dockrion_common import success_response, error_response
 
 # Load adapter at startup
 FRAMEWORK = "langgraph"
@@ -1155,8 +1155,8 @@ async def invoke(request: Request):
 ```python
 # SDK can use adapters to test agents locally
 
-from agentdock_adapters import get_adapter
-from agentdock_schema import DockSpec
+from dockrion_adapters import get_adapter
+from dockrion_schema import DockSpec
 
 def test_agent_locally(dockspec: DockSpec):
     """Test agent before deployment"""
@@ -1194,7 +1194,7 @@ result = adapter.invoke(payload)
 #### 1. Custom Adapters (Plugins)
 ```python
 # Users can register custom adapters
-from agentdock_adapters import register_adapter
+from dockrion_adapters import register_adapter
 
 class MyCustomAdapter(AgentAdapter):
     def load(self, entrypoint): ...
@@ -1370,7 +1370,7 @@ except asyncio.TimeoutError:
 ```toml
 [project]
 dependencies = [
-    "agentdock-common>=0.1.0",  # For errors, validation, logging
+    "dockrion-common>=0.1.0",  # For errors, validation, logging
 ]
 ```
 
@@ -1397,13 +1397,13 @@ all = [
 
 ```bash
 # Minimal (just protocol and common)
-pip install agentdock-adapters
+pip install dockrion-adapters
 
 # With LangGraph support
-pip install agentdock-adapters[langgraph]
+pip install dockrion-adapters[langgraph]
 
 # With all frameworks
-pip install agentdock-adapters[all]
+pip install dockrion-adapters[all]
 ```
 
 ---
@@ -1412,7 +1412,7 @@ pip install agentdock-adapters[all]
 
 ```
 packages/adapters/
-├── agentdock_adapters/
+├── dockrion_adapters/
 │   ├── __init__.py           # Public API exports
 │   ├── base.py               # AgentAdapter protocol
 │   ├── langgraph_adapter.py  # LangGraph implementation
@@ -1474,7 +1474,7 @@ packages/adapters/
 
 ---
 
-**Document Owner:** AgentDock Development Team  
+**Document Owner:** Dockrion Development Team  
 **Last Review:** November 14, 2024  
 **Next Review:** After Phase 1 completion
 

@@ -1,7 +1,7 @@
 """Tests for validate command."""
 import pytest
 from typer.testing import CliRunner
-from agentdock_cli.main import app
+from dockrion_cli.main import app
 
 runner = CliRunner()
 

@@ -1,11 +1,11 @@
 [project]
-name = "agentdock-schema"
+name = "dockrion-schema"
 version = "0.1.0"
-description = "Dockfile schema and validation for AgentDock"
+description = "Dockfile schema and validation for Dockrion"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2.5",
-    "agentdock-common>=0.1.1,<0.2.0",
+    "dockrion-common>=0.1.1,<0.2.0",
 ]
 
 [project.optional-dependencies]

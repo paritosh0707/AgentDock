@@ -1,5 +1,5 @@
 """
-Basic usage example for agentdock-adapters package.
+Basic usage example for dockrion-adapters package.
 
 Demonstrates:
 1. Getting an adapter using the factory
@@ -10,7 +10,7 @@ Demonstrates:
 6. Error handling
 """
 
-from agentdock_adapters import (
+from dockrion_adapters import (
     get_adapter,
     list_supported_frameworks,
     AdapterLoadError,

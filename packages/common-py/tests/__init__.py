@@ -1,2 +1,2 @@
-# Test package for agentdock-common
+# Test package for dockrion-common
 

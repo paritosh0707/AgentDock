@@ -1,5 +1,5 @@
 """
-Standalone demonstration of agentdock-adapters.
+Standalone demonstration of dockrion-adapters.
 
 This example creates a mock agent inline and demonstrates all adapter features
 without requiring external dependencies or imports.
@@ -11,7 +11,7 @@ from pathlib import Path
 # Add current directory to Python path so we can import our mock agent
 sys.path.insert(0, str(Path(__file__).parent))
 
-from agentdock_adapters import (
+from dockrion_adapters import (
     get_adapter,
     list_supported_frameworks,
     is_framework_supported,
@@ -280,7 +280,7 @@ def main():
     """Run all demonstrations"""
     print("\n")
     print("╔" + "═" * 58 + "╗")
-    print("║" + " " * 10 + "AGENTDOCK ADAPTERS - DEMO" + " " * 23 + "║")
+    print("║" + " " * 10 + "dockrion ADAPTERS - DEMO" + " " * 23 + "║")
     print("╚" + "═" * 58 + "╝")
     print()
     
@@ -309,7 +309,7 @@ def main():
     print("📚 Next steps:")
     print("  - Check out the README.md for more information")
     print("  - Run tests with: uv run pytest tests/ -v")
-    print("  - Read the source code in agentdock_adapters/")
+    print("  - Read the source code in dockrion_adapters/")
     print()
 
 

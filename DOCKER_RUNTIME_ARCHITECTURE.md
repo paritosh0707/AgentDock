@@ -2,7 +2,7 @@
 
 ## Overview
 
-The AgentDock Docker runtime now leverages the **full AgentDock infrastructure** including the adapter layer, schema validation, and common utilities. This provides a robust, production-ready runtime with proper error handling, logging, and framework-agnostic agent invocation.
+The Dockrion Docker runtime now leverages the **full Dockrion infrastructure** including the adapter layer, schema validation, and common utilities. This provides a robust, production-ready runtime with proper error handling, logging, and framework-agnostic agent invocation.
 
 ## Architecture Improvements
 
@@ -23,11 +23,11 @@ result = agent.invoke(payload)  # Framework-specific
 
 ### After (Infrastructure-Aware Runtime)
 ```python
-# ✅ New approach: Use AgentDock packages
-from agentdock_adapters import get_adapter
-from agentdock_schema import DockSpec
-from agentdock_common.errors import AgentDockError, ValidationError
-from agentdock_common.logger import get_logger
+# ✅ New approach: Use Dockrion packages
+from dockrion_adapters import get_adapter
+from dockrion_schema import DockSpec
+from dockrion_common.errors import DockrionError, ValidationError
+from dockrion_common.logger import get_logger
 
 # Initialize with adapter layer
 adapter = get_adapter(SPEC.agent.framework)
@@ -49,22 +49,22 @@ result = adapter.invoke(payload)
 
 ### 1. Package Bundling
 
-The Dockerfile copies AgentDock packages into the image:
+The Dockerfile copies Dockrion packages into the image:
 
 ```dockerfile
-# Copy AgentDock packages (to be installed locally)
-COPY packages/common-py/ /agentdock_packages/common-py/
-COPY packages/schema/ /agentdock_packages/schema/
-COPY packages/adapters/ /agentdock_packages/adapters/
+# Copy Dockrion packages (to be installed locally)
+COPY packages/common-py/ /dockrion_packages/common-py/
+COPY packages/schema/ /dockrion_packages/schema/
+COPY packages/adapters/ /dockrion_packages/adapters/
 
-# Install AgentDock packages first (from local copies)
-RUN pip install --no-cache-dir -e /agentdock_packages/common-py && \
-    pip install --no-cache-dir -e /agentdock_packages/schema && \
-    pip install --no-cache-dir -e /agentdock_packages/adapters
+# Install Dockrion packages first (from local copies)
+RUN pip install --no-cache-dir -e /dockrion_packages/common-py && \
+    pip install --no-cache-dir -e /dockrion_packages/schema && \
+    pip install --no-cache-dir -e /dockrion_packages/adapters
 ```
 
 **Why local installation?**
-- AgentDock packages are not yet published to PyPI
+- Dockrion packages are not yet published to PyPI
 - Local installation with `-e` (editable mode) makes them available
 - No need to publish packages for V1 deployment
 
@@ -72,12 +72,12 @@ RUN pip install --no-cache-dir -e /agentdock_packages/common-py && \
 
 The `_render_runtime()` function generates FastAPI code that:
 
-1. **Imports AgentDock packages**:
+1. **Imports Dockrion packages**:
    ```python
-   from agentdock_adapters import get_adapter
-   from agentdock_schema import DockSpec
-   from agentdock_common.errors import AgentDockError, ValidationError
-   from agentdock_common.logger import get_logger
+   from dockrion_adapters import get_adapter
+   from dockrion_schema import DockSpec
+   from dockrion_common.errors import DockrionError, ValidationError
+   from dockrion_common.logger import get_logger
    ```
 
 2. **Initializes the adapter layer**:
@@ -102,9 +102,9 @@ except ValidationError as e:
     # Handle validation errors (400)
     logger.error(f"Validation error: {e}")
     return JSONResponse(status_code=400, content={...})
-except AgentDockError as e:
-    # Handle AgentDock-specific errors (500)
-    logger.error(f"AgentDock error: {e}")
+except DockrionError as e:
+    # Handle dockrion-specific errors (500)
+    logger.error(f"Dockrion error: {e}")
     return JSONResponse(status_code=500, content={...})
 except Exception as e:
     # Handle unexpected errors (500)
@@ -130,21 +130,21 @@ logger.info(f"Agent invocation completed in {latency:.3f}s")
 
 ```python
 """
-Generated AgentDock Runtime
+Generated Dockrion Runtime
 Agent: invoice-copilot
 Framework: langgraph
 
-This runtime leverages the full AgentDock infrastructure:
+This runtime leverages the full Dockrion infrastructure:
 - Adapter layer for framework-agnostic agent invocation
 - Schema validation for inputs/outputs
 - Common utilities for error handling and logging
 """
 
 # 1. Imports
-from agentdock_adapters import get_adapter
-from agentdock_schema import DockSpec
-from agentdock_common.errors import AgentDockError, ValidationError
-from agentdock_common.logger import get_logger
+from dockrion_adapters import get_adapter
+from dockrion_schema import DockSpec
+from dockrion_common.errors import DockrionError, ValidationError
+from dockrion_common.logger import get_logger
 
 # 2. Initialize logger
 logger = get_logger(__name__)
@@ -214,15 +214,15 @@ async def invoke(request: Request):
 ### Building an Image
 
 ```bash
-$ agentdock build
+$ Dockrion build
 ℹ️  Building Docker image for agent: invoice-copilot
-✅ Successfully built image: agentdock/invoice-copilot:dev
+✅ Successfully built image: Dockrion/invoice-copilot:dev
 ```
 
 ### Running the Container
 
 ```bash
-$ docker run -p 8080:8080 agentdock/invoice-copilot:dev
+$ docker run -p 8080:8080 Dockrion/invoice-copilot:dev
 ```
 
 ### Testing the Agent
@@ -267,7 +267,7 @@ if SPEC.io_schema and SPEC.io_schema.output:
 
 ### 2. Policy Engine Integration
 ```python
-from agentdock_policy import PolicyEngine
+from dockrion_policy import PolicyEngine
 
 policy_engine = PolicyEngine(SPEC.policies)
 result = policy_engine.apply(result)
@@ -275,7 +275,7 @@ result = policy_engine.apply(result)
 
 ### 3. Telemetry Integration
 ```python
-from agentdock_telemetry import track_invocation
+from dockrion_telemetry import track_invocation
 
 track_invocation(
     agent_name=SPEC.agent.name,
@@ -301,7 +301,7 @@ async def invoke(request: Request): ...
 |--------|----------------|------------------------------|
 | Agent Loading | Manual `importlib` | Adapter layer |
 | Invocation | Framework-specific | Framework-agnostic |
-| Error Handling | Generic `Exception` | Typed errors (ValidationError, AgentDockError) |
+| Error Handling | Generic `Exception` | Typed errors (ValidationError, DockrionError) |
 | Logging | Print statements | Structured logging |
 | Schema Validation | None | Ready for V1.1+ |
 | Policy Engine | None | Ready for V1.1+ |
@@ -311,7 +311,7 @@ async def invoke(request: Request): ...
 
 ## Conclusion
 
-The new Docker runtime architecture leverages the full AgentDock infrastructure, providing:
+The new Docker runtime architecture leverages the full Dockrion infrastructure, providing:
 - ✅ Framework-agnostic agent invocation via adapter layer
 - ✅ Proper error handling with custom exceptions
 - ✅ Structured logging for observability
@@ -321,5 +321,5 @@ The new Docker runtime architecture leverages the full AgentDock infrastructure,
 - ✅ Consistent behavior with local development
 - ✅ Maintainable and extensible architecture
 
-This makes AgentDock Docker deployments robust, scalable, and production-ready! 🚀
+This makes Dockrion Docker deployments robust, scalable, and production-ready! 🚀
 

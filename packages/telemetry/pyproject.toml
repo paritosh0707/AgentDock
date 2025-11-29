@@ -1,5 +1,5 @@
 [project]
-name = "agentdock-telemetry"
+name = "dockrion-telemetry"
 version = "0.1.0"
 description = "Telemetry helpers"
 requires-python = ">=3.12"

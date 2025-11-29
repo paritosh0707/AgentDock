@@ -1,6 +1,6 @@
-# AgentDock Developer Journey: From Code to Production
+# Dockrion Developer Journey: From Code to Production
 
-This document provides a detailed journey of how AgentDock components interact, following real user workflows from development to production deployment and invocation.
+This document provides a detailed journey of how Dockrion components interact, following real user workflows from development to production deployment and invocation.
 
 ## Table of Contents
 1. [Journey 1: Developer Creates and Deploys an Agent](#journey-1-developer-creates-and-deploys-an-agent)
@@ -66,7 +66,7 @@ model:
 
 **Command:**
 ```bash
-agentdock validate
+Dockrion validate
 ```
 
 **Flow:**
@@ -74,13 +74,13 @@ agentdock validate
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. CLI Entry Point                                           │
-│    packages/cli/agentdock_cli/validate_cmd.py               │
+│    packages/cli/dockrion_cli/validate_cmd.py               │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. Load Dockfile (SDK)                                       │
-│    packages/sdk-python/agentdock_sdk/validate.py            │
+│    packages/sdk-python/dockrion_sdk/validate.py            │
 │                                                               │
 │    - Reads Dockfile.yaml from disk                          │
 │    - Parses YAML content                                     │
@@ -89,7 +89,7 @@ agentdock validate
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. Parse & Validate Schema                                   │
-│    packages/schema/agentdock_schema/dockfile_v1.py          │
+│    packages/schema/dockrion_schema/dockfile_v1.py          │
 │                                                               │
 │    DockSpec.model_validate(data)                            │
 │    - Validates all fields                                    │
@@ -100,7 +100,7 @@ agentdock validate
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Custom Validation (Common)                                │
-│    packages/common-py/agentdock_common/validation.py        │
+│    packages/common-py/dockrion_common/validation.py        │
 │                                                               │
 │    - validate_entrypoint()                                   │
 │      ✓ Checks "module:callable" format                      │
@@ -114,7 +114,7 @@ agentdock validate
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 5. Check Constants (Common)                                  │
-│    packages/common-py/agentdock_common/constants.py         │
+│    packages/common-py/dockrion_common/constants.py         │
 │                                                               │
 │    - framework in SUPPORTED_FRAMEWORKS?                      │
 │    - provider in SUPPORTED_PROVIDERS?                        │
@@ -124,7 +124,7 @@ agentdock validate
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 6. Return Result to CLI                                      │
-│    packages/cli/agentdock_cli/validate_cmd.py               │
+│    packages/cli/dockrion_cli/validate_cmd.py               │
 │                                                               │
 │    if valid:                                                 │
 │        print("✅ Dockfile valid")                           │
@@ -168,7 +168,7 @@ except ValidationError as e:
 
 **Command:**
 ```bash
-agentdock deploy --target local
+Dockrion deploy --target local
 ```
 
 **Detailed Flow:**
@@ -176,7 +176,7 @@ agentdock deploy --target local
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. CLI Entry Point                                           │
-│    packages/cli/agentdock_cli/deploy_cmd.py                 │
+│    packages/cli/dockrion_cli/deploy_cmd.py                 │
 │                                                               │
 │    - Parses arguments: target="local"                        │
 │    - Calls SDK deploy function                               │
@@ -185,7 +185,7 @@ agentdock deploy --target local
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. Load & Validate Dockspec (SDK + Schema + Common)         │
-│    packages/sdk-python/agentdock_sdk/client.py              │
+│    packages/sdk-python/dockrion_sdk/client.py              │
 │                                                               │
 │    def load_dockspec(path):                                  │
 │        data = yaml.safe_load(...)                            │
@@ -197,7 +197,7 @@ agentdock deploy --target local
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. Generate Dockerfile (SDK)                                 │
-│    packages/sdk-python/agentdock_sdk/deploy.py              │
+│    packages/sdk-python/dockrion_sdk/deploy.py              │
 │                                                               │
 │    _render_dockerfile(spec)                                  │
 │    - Uses Jinja2 template: templates/dockerfiles/           │
@@ -216,7 +216,7 @@ agentdock deploy --target local
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Generate Runtime Server (SDK)                             │
-│    packages/sdk-python/agentdock_sdk/deploy.py              │
+│    packages/sdk-python/dockrion_sdk/deploy.py              │
 │                                                               │
 │    _render_runtime(spec)                                     │
 │    - Uses template: templates/runtime-fastapi/main.py.j2    │
@@ -229,9 +229,9 @@ agentdock deploy --target local
 │    Generated runtime.py:                                     │
 │    ┌─────────────────────────────────────────┐             │
 │    │ from fastapi import FastAPI              │             │
-│    │ from agentdock_adapters import get_adapter │           │
-│    │ from agentdock_policy import PolicyEngine │            │
-│    │ from agentdock_telemetry import log_event │            │
+│    │ from dockrion_adapters import get_adapter │           │
+│    │ from dockrion_policy import PolicyEngine │            │
+│    │ from dockrion_telemetry import log_event │            │
 │    │                                           │             │
 │    │ app = FastAPI()                          │             │
 │    │ agent = load_agent_from_entrypoint()     │             │
@@ -250,17 +250,17 @@ agentdock deploy --target local
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 5. Build Docker Image                                        │
-│    packages/sdk-python/agentdock_sdk/deploy.py              │
+│    packages/sdk-python/dockrion_sdk/deploy.py              │
 │                                                               │
 │    subprocess.run([                                          │
 │        "docker", "build",                                    │
-│        "-t", "agentdock/invoice-copilot:latest",            │
+│        "-t", "Dockrion/invoice-copilot:latest",            │
 │        "."                                                   │
 │    ])                                                        │
 │                                                               │
 │    Image layers:                                             │
 │    - Base Python image                                       │
-│    - AgentDock packages (adapters, policy, telemetry)       │
+│    - Dockrion packages (adapters, policy, telemetry)       │
 │    - User's agent code                                       │
 │    - Generated runtime server                                │
 └──────────────────────┬──────────────────────────────────────┘
@@ -268,13 +268,13 @@ agentdock deploy --target local
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 6. Run Container Locally                                     │
-│    packages/sdk-python/agentdock_sdk/deploy.py              │
+│    packages/sdk-python/dockrion_sdk/deploy.py              │
 │                                                               │
 │    subprocess.run([                                          │
 │        "docker", "run",                                      │
 │        "-p", "8080:8080",                                    │
 │        "-e", "OPENAI_API_KEY=...",                          │
-│        "agentdock/invoice-copilot:latest"                   │
+│        "Dockrion/invoice-copilot:latest"                   │
 │    ])                                                        │
 │                                                               │
 │    Container starts:                                         │
@@ -289,7 +289,7 @@ agentdock deploy --target local
 │ 7. Success Message to Alice                                  │
 │                                                               │
 │    ✅ Deployment successful!                                │
-│    📦 Image: agentdock/invoice-copilot:latest               │
+│    📦 Image: Dockrion/invoice-copilot:latest               │
 │    🚀 Running on: http://localhost:8080                     │
 │    📝 API Docs: http://localhost:8080/docs                  │
 └─────────────────────────────────────────────────────────────┘
@@ -340,7 +340,7 @@ print(response.json())
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ RUNTIME CONTAINER (Generated by SDK)                        │
-│ Image: agentdock/invoice-copilot:latest                     │
+│ Image: Dockrion/invoice-copilot:latest                     │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -356,7 +356,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. Validate API Key (Common)                                 │
-│    packages/common-py/agentdock_common/auth_utils.py        │
+│    packages/common-py/dockrion_common/auth_utils.py        │
 │                                                               │
 │    validate_api_key(api_key, expected_key)                   │
 │                                                               │
@@ -364,7 +364,7 @@ print(response.json())
 │    - Reads expected_key from environment variable            │
 │    - If invalid: raises AuthError                            │
 │                                                               │
-│    from agentdock_common.errors import AuthError             │
+│    from dockrion_common.errors import AuthError             │
 │    if not valid:                                             │
 │        raise AuthError("Invalid API key")                    │
 └──────────────────────┬──────────────────────────────────────┘
@@ -372,7 +372,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. Validate Input Schema (Schema)                            │
-│    packages/schema/agentdock_schema/dockfile_v1.py          │
+│    packages/schema/dockrion_schema/dockfile_v1.py          │
 │                                                               │
 │    Expected input from io_schema:                            │
 │    {                                                         │
@@ -392,7 +392,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Log Invocation Start (Telemetry)                         │
-│    packages/telemetry/agentdock_telemetry/logger.py         │
+│    packages/telemetry/dockrion_telemetry/logger.py         │
 │                                                               │
 │    log_event("invocation_start",                             │
 │        agent="invoice-copilot",                              │
@@ -408,12 +408,12 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 5. Get Agent Adapter (Adapters)                              │
-│    packages/adapters/agentdock_adapters/registry.py         │
+│    packages/adapters/dockrion_adapters/registry.py         │
 │                                                               │
 │    adapter = get_adapter(framework="langgraph")              │
 │    # Returns: LangGraphAdapter                               │
 │                                                               │
-│    packages/adapters/agentdock_adapters/langgraph_adapter.py│
+│    packages/adapters/dockrion_adapters/langgraph_adapter.py│
 │    - Wraps LangGraph execution                               │
 │    - Provides uniform interface                              │
 └──────────────────────┬──────────────────────────────────────┘
@@ -437,7 +437,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 7. Execute Agent (via Adapter)                               │
-│    packages/adapters/agentdock_adapters/langgraph_adapter.py│
+│    packages/adapters/dockrion_adapters/langgraph_adapter.py│
 │                                                               │
 │    start_time = time.time()                                  │
 │                                                               │
@@ -459,7 +459,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 8. Apply Safety Policies (Policy Engine)                    │
-│    packages/policy-engine/agentdock_policy/policy_engine.py │
+│    packages/policy-engine/dockrion_policy/policy_engine.py │
 │                                                               │
 │    policy = PolicyEngine.from_dockspec(spec)                 │
 │                                                               │
@@ -485,7 +485,7 @@ print(response.json())
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 9. Log Telemetry (Telemetry)                                │
-│    packages/telemetry/agentdock_telemetry/                  │
+│    packages/telemetry/dockrion_telemetry/                  │
 │                                                               │
 │    # Log completion event                                    │
 │    logger.py:                                                │
@@ -502,16 +502,16 @@ print(response.json())
 │        version="v1.0.0",                                     │
 │        latency_s=latency                                     │
 │    )                                                         │
-│    # Increments: agentdock_requests_total                    │
-│    # Records: agentdock_latency_seconds histogram            │
+│    # Increments: dockrion_requests_total                    │
+│    # Records: dockrion_latency_seconds histogram            │
 └──────────────────────┬──────────────────────────────────────┘
                        │
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 10. Format Response (Common)                                 │
-│     packages/common-py/agentdock_common/http_models.py      │
+│     packages/common-py/dockrion_common/http_models.py      │
 │                                                               │
-│     from agentdock_common.http_models import success_response│
+│     from dockrion_common.http_models import success_response│
 │                                                               │
 │     response = success_response({                            │
 │         "vendor": "Acme Corp",                               │
@@ -558,7 +558,7 @@ print(response.json())
 │                                                               │
 │    @app.exception_handler(AuthError)                         │
 │    async def auth_error_handler(request, exc):               │
-│        from agentdock_common.http_models import error_response│
+│        from dockrion_common.http_models import error_response│
 │        return JSONResponse(                                  │
 │            status_code=401,                                  │
 │            content=error_response(exc)                       │
@@ -612,7 +612,7 @@ In V1, auth is embedded in runtime. In V1.1+, there will be a separate Auth serv
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Parse Auth Config (Schema)                                │
-│    packages/schema/agentdock_schema/dockfile_v1.py          │
+│    packages/schema/dockrion_schema/dockfile_v1.py          │
 │                                                               │
 │    class AuthCfg(BaseModel):                                 │
 │        mode: Literal["jwt","api_key","oauth2"] = "api_key"  │
@@ -623,7 +623,7 @@ In V1, auth is embedded in runtime. In V1.1+, there will be a separate Auth serv
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. Generate API Keys (Common)                                │
-│    packages/common-py/agentdock_common/auth_utils.py        │
+│    packages/common-py/dockrion_common/auth_utils.py        │
 │                                                               │
 │    new_key = generate_api_key(prefix="agd")                  │
 │    # Returns: "agd_8f7g9h2j3k4l5m6n7o8p9q0r1s2t3u4v5w6x7y" │
@@ -635,7 +635,7 @@ In V1, auth is embedded in runtime. In V1.1+, there will be a separate Auth serv
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. Validate Permissions (Constants)                          │
-│    packages/common-py/agentdock_common/constants.py         │
+│    packages/common-py/dockrion_common/constants.py         │
 │                                                               │
 │    PERMISSIONS = [                                           │
 │        "deploy", "rollback", "invoke",                       │
@@ -651,7 +651,7 @@ In V1, auth is embedded in runtime. In V1.1+, there will be a separate Auth serv
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 4. Parse Rate Limits (Common)                                │
-│    packages/common-py/agentdock_common/validation.py        │
+│    packages/common-py/dockrion_common/validation.py        │
 │                                                               │
 │    count, seconds = parse_rate_limit("1000/m")               │
 │    # Returns: (1000, 60)                                     │
@@ -743,18 +743,18 @@ curl http://localhost:8080/metrics
                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ 2. Prometheus Metrics (Telemetry)                            │
-│    packages/telemetry/agentdock_telemetry/prometheus_utils.py│
+│    packages/telemetry/dockrion_telemetry/prometheus_utils.py│
 │                                                               │
 │    Metrics collected during invocations:                     │
 │                                                               │
 │    REQ_COUNT = Counter(                                      │
-│        "agentdock_requests_total",                           │
+│        "dockrion_requests_total",                           │
 │        "Total requests",                                     │
 │        ["agent", "version"]                                  │
 │    )                                                         │
 │                                                               │
 │    LATENCY = Histogram(                                      │
-│        "agentdock_latency_seconds",                          │
+│        "dockrion_latency_seconds",                          │
 │        "Latency seconds",                                    │
 │        ["agent", "version"]                                  │
 │    )                                                         │
@@ -764,20 +764,20 @@ curl http://localhost:8080/metrics
 ┌─────────────────────────────────────────────────────────────┐
 │ 3. Response to Alice                                         │
 │                                                               │
-│    # HELP agentdock_requests_total Total requests            │
-│    # TYPE agentdock_requests_total counter                   │
-│    agentdock_requests_total{agent="invoice-copilot",         │
+│    # HELP dockrion_requests_total Total requests            │
+│    # TYPE dockrion_requests_total counter                   │
+│    dockrion_requests_total{agent="invoice-copilot",         │
 │                             version="v1.0.0"} 1523           │
 │                                                               │
-│    # HELP agentdock_latency_seconds Latency seconds          │
-│    # TYPE agentdock_latency_seconds histogram                │
-│    agentdock_latency_seconds_bucket{agent="invoice-copilot", │
+│    # HELP dockrion_latency_seconds Latency seconds          │
+│    # TYPE dockrion_latency_seconds histogram                │
+│    dockrion_latency_seconds_bucket{agent="invoice-copilot", │
 │                                     version="v1.0.0",le="0.5"} 1234│
-│    agentdock_latency_seconds_bucket{agent="invoice-copilot", │
+│    dockrion_latency_seconds_bucket{agent="invoice-copilot", │
 │                                     version="v1.0.0",le="1.0"} 1456│
-│    agentdock_latency_seconds_sum{agent="invoice-copilot",    │
+│    dockrion_latency_seconds_sum{agent="invoice-copilot",    │
 │                                   version="v1.0.0"} 1234.56  │
-│    agentdock_latency_seconds_count{agent="invoice-copilot",  │
+│    dockrion_latency_seconds_count{agent="invoice-copilot",  │
 │                                     version="v1.0.0"} 1523   │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -788,7 +788,7 @@ curl http://localhost:8080/metrics
 
 **Command:**
 ```bash
-docker logs agentdock-invoice-copilot
+docker logs dockrion-invoice-copilot
 ```
 
 **Output (from Telemetry):**
@@ -803,7 +803,7 @@ docker logs agentdock-invoice-copilot
 
 **Generated by:**
 ```python
-# packages/telemetry/agentdock_telemetry/logger.py
+# packages/telemetry/dockrion_telemetry/logger.py
 log_event("invocation_start", agent="invoice-copilot", timestamp=time.time())
 log_event("invocation_complete", agent="invoice-copilot", latency_ms=234.5, status="success")
 ```
@@ -868,7 +868,7 @@ log_event("invocation_complete", agent="invoice-copilot", latency_ms=234.5, stat
          │            │                  │
          ▼            ▼                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                     AGENTDOCK PACKAGES                       │
+│                     Dockrion PACKAGES                       │
 │                                                               │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │  COMMON (Shared by All)                              │   │
@@ -897,7 +897,7 @@ log_event("invocation_complete", agent="invoice-copilot", latency_ms=234.5, stat
 │  │  • GET /schema   ← Uses: schema                       │   │
 │  └──────────────────────────────────────────────────────┘   │
 │                                                               │
-│  Contains: User's agent + All AgentDock packages             │
+│  Contains: User's agent + All Dockrion packages             │
 └─────────────────────────────────────────────────────────────┘
 ```
 

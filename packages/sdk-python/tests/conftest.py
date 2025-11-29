@@ -100,7 +100,7 @@ def set_env_vars():
 @pytest.fixture
 def runtime_dir(tmp_path):
     """Create a temporary runtime directory."""
-    runtime_path = tmp_path / ".agentdock_runtime"
+    runtime_path = tmp_path / ".dockrion_runtime"
     runtime_path.mkdir()
     return runtime_path
 

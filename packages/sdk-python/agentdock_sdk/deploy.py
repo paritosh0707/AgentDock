@@ -4,10 +4,10 @@ import os
 import sys
 from pathlib import Path
 from typing import Dict, Any, Optional
-from agentdock_sdk.client import load_dockspec
-# from agentdock_schema.dockfile_v1 import DockSpec
-from agentdock_schema import DockSpec
-from agentdock_common.errors import AgentDockError
+from dockrion_sdk.client import load_dockspec
+# from dockrion_schema.dockfile_v1 import DockSpec
+from dockrion_schema import DockSpec
+from dockrion_common.errors import DockrionError
 
 
 def _check_uv_available() -> bool:
@@ -32,7 +32,7 @@ def _print_uv_setup_instructions():
     print("\n" + "="*70)
     print("⚠️  UV Package Manager Not Found")
     print("="*70)
-    print("\nAgentDock uses 'uv' for fast, reliable package management.")
+    print("\nDockrion uses 'uv' for fast, reliable package management.")
     print("\n📦 Quick Setup (recommended):")
     print("\n  On macOS/Linux:")
     print("    curl -LsSf https://astral.sh/uv/install.sh | sh")
@@ -68,12 +68,12 @@ def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any
         }
         
     Raises:
-        AgentDockError: If deployment fails
+        DockrionError: If deployment fails
         
     Example:
         >>> result = deploy("Dockfile.yaml", target="local")
         >>> print(result["image"])
-        agentdock/invoice-copilot:dev
+        dockrion/invoice-copilot:dev
     """
     # Check if uv is available (informational only - Docker will install it)
     if not _check_uv_available():
@@ -84,10 +84,10 @@ def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any
     try:
         spec = load_dockspec(dockfile_path)
     except Exception as e:
-        raise AgentDockError(f"Failed to load Dockfile: {str(e)}")
+        raise DockrionError(f"Failed to load Dockfile: {str(e)}")
     
     # Build Docker image
-    image = f"agentdock/{spec.agent.name}:dev"
+    image = f"dockrion/{spec.agent.name}:dev"
     
     # Check if Docker is available
     try:
@@ -97,13 +97,13 @@ def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any
             text=True
         )
     except (subprocess.CalledProcessError, FileNotFoundError):
-        raise AgentDockError(
+        raise DockrionError(
             "Docker is not available. Please install Docker to deploy agents.\n"
             "Visit: https://docs.docker.com/get-docker/"
         )
     
     # Generate runtime files (needed for Docker build)
-    runtime_dir = Path(".agentdock_runtime")
+    runtime_dir = Path(".dockrion_runtime")
     runtime_dir.mkdir(exist_ok=True)
     
     # Write runtime code
@@ -130,7 +130,7 @@ def deploy(dockfile_path: str, target: str = "local", **kwargs) -> Dict[str, Any
             check=True
         )
     except subprocess.CalledProcessError as e:
-        raise AgentDockError(
+        raise DockrionError(
             f"Docker build failed for agent '{spec.agent.name}'.\n"
             f"Error: {e.stderr.decode() if e.stderr else 'Unknown error'}"
         )
@@ -158,7 +158,7 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
         Subprocess.Popen object (running server)
         
     Raises:
-        AgentDockError: If startup fails
+        DockrionError: If startup fails
         
     Example:
         >>> proc = run_local("Dockfile.yaml")
@@ -169,13 +169,13 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
     try:
         spec = load_dockspec(dockfile_path)
     except Exception as e:
-        raise AgentDockError(f"Failed to load Dockfile: {str(e)}")
+        raise DockrionError(f"Failed to load Dockfile: {str(e)}")
     
     # Generate runtime code
     code = _render_runtime(spec)
     
     # Create runtime directory
-    runtime_dir = Path(".agentdock_runtime")
+    runtime_dir = Path(".dockrion_runtime")
     runtime_dir.mkdir(exist_ok=True)
     
     # Write runtime code
@@ -206,7 +206,7 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
                 stdout=subprocess.DEVNULL
             )
         except subprocess.CalledProcessError as e:
-            raise AgentDockError(f"Failed to install dependencies with uv: {str(e)}")
+            raise DockrionError(f"Failed to install dependencies with uv: {str(e)}")
     else:
         print("  Using pip (consider installing uv for faster installs)...")
         try:
@@ -216,7 +216,7 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
                 stdout=subprocess.DEVNULL
             )
         except subprocess.CalledProcessError as e:
-            raise AgentDockError(f"Failed to install dependencies with pip: {str(e)}")
+            raise DockrionError(f"Failed to install dependencies with pip: {str(e)}")
     
     # Start the server
     host = spec.expose.host if spec.expose else "0.0.0.0"
@@ -231,7 +231,7 @@ def run_local(dockfile_path: str) -> subprocess.Popen:
         )
         return proc
     except Exception as e:
-        raise AgentDockError(f"Failed to start server: {str(e)}")
+        raise DockrionError(f"Failed to start server: {str(e)}")
 
 def _generate_requirements(spec: DockSpec) -> str:
     """Generate requirements.txt for the runtime.
@@ -243,7 +243,7 @@ def _generate_requirements(spec: DockSpec) -> str:
         requirements.txt content as string
         
     Note:
-        AgentDock packages will be installed from local copies bundled in the image.
+        dockrion packages will be installed from local copies bundled in the image.
         This allows us to use the full adapter layer and schema validation.
     """
     requirements = [
@@ -263,7 +263,7 @@ def _generate_requirements(spec: DockSpec) -> str:
     elif framework == "langchain":
         requirements.append("langchain>=0.1.0")
     
-    # Note: agentdock-* packages will be installed from /agentdock_packages/
+    # Note: dockrion-* packages will be installed from /dockrion_packages/
     # in the Dockerfile using pip install -e
     
     return "\n".join(requirements) + "\n"
@@ -302,22 +302,22 @@ RUN apt-get update && apt-get install -y curl && \\
 # Add uv to PATH (installed to /root/.local/bin)
 ENV PATH="/root/.local/bin:$PATH"
 
-# Copy AgentDock packages (to be installed locally)
-COPY packages/common-py/ /agentdock_packages/common-py/
-COPY packages/schema/ /agentdock_packages/schema/
-COPY packages/adapters/ /agentdock_packages/adapters/
+# Copy dockrion packages (to be installed locally)
+COPY packages/common-py/ /dockrion_packages/common-py/
+COPY packages/schema/ /dockrion_packages/schema/
+COPY packages/adapters/ /dockrion_packages/adapters/
 
 # Copy agent code
 COPY {agent_dir}/ /app/{agent_dir}/
 
 # Copy runtime files
-COPY .agentdock_runtime/main.py /app/main.py
-COPY .agentdock_runtime/requirements.txt /app/requirements.txt
+COPY .dockrion_runtime/main.py /app/main.py
+COPY .dockrion_runtime/requirements.txt /app/requirements.txt
 
-# Install AgentDock packages first (from local copies) using uv
-RUN uv pip install --system -e /agentdock_packages/common-py && \\
-    uv pip install --system -e /agentdock_packages/schema && \\
-    uv pip install --system -e /agentdock_packages/adapters
+# Install dockrion packages first (from local copies) using uv
+RUN uv pip install --system -e /dockrion_packages/common-py && \\
+    uv pip install --system -e /dockrion_packages/schema && \\
+    uv pip install --system -e /dockrion_packages/adapters
 
 # Install other dependencies using uv
 RUN uv pip install --system -r /app/requirements.txt
@@ -339,12 +339,14 @@ def _render_runtime(spec: DockSpec) -> str:
         
     Note:
         The generated runtime is self-contained and doesn't depend on
-        agentdock packages. It directly loads and invokes the agent.
+        dockrion packages. It directly loads and invokes the agent.
     """
     # Serialize spec for embedding in runtime
     # Use exclude_none=True to avoid validation issues with None values
     # Use mode='json' to ensure JSON-serializable output
-    spec_json = json.dumps(spec.model_dump(exclude_none=True, mode='json'), indent=2)
+    spec_json = spec.model_dump(mode='python')
+    
+    # spec_json = str(spec.to_dict())
     # Determine if we need policy engine
     has_policies = spec.policies is not None
     
@@ -353,11 +355,11 @@ def _render_runtime(spec: DockSpec) -> str:
     
     # Build runtime code
     code = f'''"""
-Generated AgentDock Runtime
+Generated dockrion Runtime
 Agent: {spec.agent.name}
 Framework: {spec.agent.framework}
 
-This runtime leverages the full AgentDock infrastructure:
+This runtime leverages the full dockrion infrastructure:
 - Adapter layer for framework-agnostic agent invocation
 - Schema validation for inputs/outputs
 - Common utilities for error handling and logging
@@ -372,16 +374,16 @@ from fastapi.responses import JSONResponse, Response
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
 
 # Add project root to Python path so agent modules can be imported
-# Runtime is in .agentdock_runtime/, project root is parent directory
+# Runtime is in .dockrion_runtime/, project root is parent directory
 project_root = Path(__file__).parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
-# Import AgentDock packages
-from agentdock_adapters import get_adapter
-from agentdock_schema import DockSpec
-from agentdock_common.errors import AgentDockError, ValidationError
-from agentdock_common.logger import get_logger
+# Import dockrion packages
+from dockrion_adapters import get_adapter
+from dockrion_schema import DockSpec
+from dockrion_common.errors import DockrionError, ValidationError
+from dockrion_common.logger import get_logger
 
 # Initialize logger
 logger = get_logger(__name__)
@@ -389,7 +391,7 @@ logger = get_logger(__name__)
 # Initialize FastAPI app
 app = FastAPI(
     title="{spec.agent.name}",
-    description="{spec.agent.description if spec.agent.description else 'AgentDock Agent'}",
+    description="{spec.agent.description if spec.agent.description else 'dockrion Agent'}",
     version="1.0.0"
 )
 
@@ -425,13 +427,14 @@ def apply_policies(output: Dict[str, Any]) -> Dict[str, Any]:
 @app.get("/health")
 async def health():
     """Health check endpoint"""
-    return {"status": "ok", "agent": SPEC["agent"]["name"]}
+    return {"status": "ok", "agent": SPEC.agent.name}
 
 
 @app.get("/schema")
 async def get_schema():
     """Get input/output schema"""
-    return SPEC.get("io_schema", {})
+    return getattr(SPEC, "io_schema", {})
+
 
 
 @app.get("/metrics")
@@ -455,8 +458,8 @@ async def invoke(request: Request):
         
         # Optional: Check API key
         api_key = request.headers.get("X-API-Key")
-        if os.environ.get("AGENTDOCK_REQUIRE_AUTH", "false").lower() == "true":
-            if not api_key or api_key != os.environ.get("AGENTDOCK_API_KEY", ""):
+        if os.environ.get("DOCKRION_REQUIRE_AUTH", "false").lower() == "true":
+            if not api_key or api_key != os.environ.get("DOCKRION_API_KEY", ""):
                 logger.warning("Unauthorized access attempt")
                 raise HTTPException(status_code=401, detail="Invalid or missing API key")
         
@@ -505,14 +508,14 @@ async def invoke(request: Request):
                 "error_type": "ValidationError"
             }
         )
-    except AgentDockError as e:
-        logger.error(f"AgentDock error: {{e}}")
+    except DockrionError as e:
+        logger.error(f"dockrion error: {{e}}")
         return JSONResponse(
             status_code=500,
             content={
                 "success": False,
                 "error": str(e),
-                "error_type": "AgentDockError"
+                "error_type": "DockrionError"
             }
         )
     except Exception as e:

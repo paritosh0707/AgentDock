@@ -5,7 +5,7 @@ Tests for the logger module
 import json
 import pytest
 from io import StringIO
-from agentdock_common.logger import (
+from dockrion_common.logger import (
     get_logger,
     configure_logging,
     set_request_id,
@@ -15,7 +15,7 @@ from agentdock_common.logger import (
 
 
 class TestLogger:
-    """Test AgentDockLogger"""
+    """Test DockrionLogger"""
     
     def test_get_logger(self):
         """Test get_logger creates a logger"""

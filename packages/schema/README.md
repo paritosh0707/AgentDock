@@ -1,10 +1,10 @@
-# AgentDock Schema Package
+# Dockrion Schema Package
 
 Type-safe validation layer for Dockfile configurations.
 
 ## Overview
 
-The `agentdock-schema` package provides Pydantic models for validating and working with Dockfile specifications. It's the foundation for consistent validation across all AgentDock services.
+The `dockrion-schema` package provides Pydantic models for validating and working with Dockfile specifications. It's the foundation for consistent validation across all Dockrion services.
 
 **Key Features:**
 - 🔒 Type-safe validation with Pydantic v2
@@ -51,11 +51,11 @@ with open("Dockfile.yaml") as f:
 ```
 
 ### 2. Single Source of Truth (Constants from Common)
-All supported values (frameworks, providers, auth modes, etc.) are defined in `agentdock-common` and imported by schema for validation.
+All supported values (frameworks, providers, auth modes, etc.) are defined in `dockrion-common` and imported by schema for validation.
 
 ```python
 # Schema imports constants from common
-from agentdock_common import (
+from dockrion_common import (
     SUPPORTED_FRAMEWORKS,
     SUPPORTED_PROVIDERS,
     SUPPORTED_AUTH_MODES,
@@ -74,7 +74,7 @@ def validate_framework(cls, v: str) -> str:
 **Benefits:**
 - No duplication of constants across packages
 - Easy to add new supported values (just update `common/constants.py`)
-- Consistent validation rules across all AgentDock services
+- Consistent validation rules across all Dockrion services
 
 ### 3. Extensibility
 Models accept unknown fields using `ConfigDict(extra="allow")` for future expansion.
@@ -99,7 +99,7 @@ Critical validations prevent security issues:
 ### Basic Usage
 
 ```python
-from agentdock_schema import DockSpec, ValidationError
+from dockrion_schema import DockSpec, ValidationError
 
 # SDK passes parsed YAML dict to schema
 data = {
@@ -131,7 +131,7 @@ except ValidationError as e:
 ### Serialization
 
 ```python
-from agentdock_schema import to_dict, to_yaml_string, from_dict
+from dockrion_schema import to_dict, to_yaml_string, from_dict
 
 # Convert spec to dict
 spec_dict = to_dict(spec)
@@ -150,7 +150,7 @@ spec = from_dict(data)
 ### JSON Schema Generation
 
 ```python
-from agentdock_schema import generate_json_schema, write_json_schema
+from dockrion_schema import generate_json_schema, write_json_schema
 
 # Get JSON Schema as dict
 schema = generate_json_schema()
@@ -352,8 +352,8 @@ write_json_schema("dockfile_v1_schema.json")
 ### How SDK Uses Schema
 
 ```python
-# packages/sdk/agentdock_sdk/validate.py
-from agentdock_schema import DockSpec, ValidationError
+# packages/sdk/dockrion_sdk/validate.py
+from dockrion_schema import DockSpec, ValidationError
 import yaml
 
 def validate_dockfile(path: str) -> DockSpec:
@@ -375,9 +375,9 @@ def validate_dockfile(path: str) -> DockSpec:
 ### How CLI Uses Schema
 
 ```python
-# packages/cli/agentdock_cli/validate_cmd.py
-from agentdock_sdk import validate_dockfile
-from agentdock_schema import ValidationError
+# packages/cli/dockrion_cli/validate_cmd.py
+from dockrion_sdk import validate_dockfile
+from dockrion_schema import ValidationError
 import typer
 
 @app.command()
@@ -396,7 +396,7 @@ def validate(path: str = "Dockfile.yaml"):
 
 ```python
 # Generated runtime.py
-from agentdock_schema import DockSpec
+from dockrion_schema import DockSpec
 
 # SDK embeds validated spec in generated runtime
 SPEC = {
@@ -421,7 +421,7 @@ cd packages/schema
 pytest tests/
 
 # Run with coverage
-pytest tests/ --cov=agentdock_schema --cov-report=html
+pytest tests/ --cov=dockrion_schema --cov-report=html
 
 # Run specific test file
 pytest tests/test_models.py -v
@@ -432,10 +432,10 @@ pytest tests/test_models.py::TestAgentConfig::test_valid_agent_config -v
 
 ## Error Handling
 
-Schema uses `ValidationError` from `agentdock-common` for all validation errors:
+Schema uses `ValidationError` from `dockrion-common` for all validation errors:
 
 ```python
-from agentdock_schema import ValidationError
+from dockrion_schema import ValidationError
 
 try:
     spec = DockSpec.model_validate(data)
@@ -531,7 +531,7 @@ When Dockfile v2 is needed:
 
 ### Required
 - `pydantic>=2.5` - Core validation framework
-- `agentdock-common` - Validation utilities and constants
+- `dockrion-common` - Validation utilities and constants
 
 ### Optional (dev)
 - `pyyaml>=6.0` - For YAML serialization (`to_yaml_string()`)
@@ -591,7 +591,7 @@ def test_new_field_validation():
 
 ## Troubleshooting
 
-### Import Error: agentdock-common not found
+### Import Error: dockrion-common not found
 ```bash
 # Install common package first
 pip install -e packages/common-py
@@ -620,7 +620,7 @@ except ValidationError as e:
 
 - **Documentation**: See `docs/SCHEMA_PACKAGE_SPEC.md`
 - **Examples**: Check `tests/` directory for usage examples
-- **Issues**: GitHub Issues on AgentDock repository
+- **Issues**: GitHub Issues on Dockrion repository
 
 ## License
 

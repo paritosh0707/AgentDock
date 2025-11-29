@@ -1,6 +1,6 @@
-# Changelog - agentdock-schema
+# Changelog - dockrion-schema
 
-All notable changes to the `agentdock-schema` package will be documented in this file.
+All notable changes to the `dockrion-schema` package will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2024-11-12
 
 ### Added
-- Initial implementation of `agentdock-schema` package
+- Initial implementation of `dockrion-schema` package
 - Pydantic models for Dockfile v1.0 specification:
   - `DockSpec` - Root specification model
   - `AgentConfig` - Agent metadata and entrypoint configuration
@@ -31,11 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Temperature range validation (0-2)
   - Rate limit format validation
   - Permissions validation
-- Serialization utilities in `agentdock_schema.serialization`:
+- Serialization utilities in `dockrion_schema.serialization`:
   - `to_dict()` - Convert DockSpec to dictionary
   - `from_dict()` - Create DockSpec from dictionary with validation
   - `to_yaml_string()` - Serialize DockSpec to YAML string
-- JSON Schema generation in `agentdock_schema.json_schema`:
+- JSON Schema generation in `dockrion_schema.json_schema`:
   - `generate_json_schema()` - Generate JSON Schema from DockSpec
   - `write_json_schema()` - Write JSON Schema to file
   - `get_schema_version()` - Get Dockfile schema version
@@ -47,12 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Dependencies
 - `pydantic >= 2.0` - For data validation and serialization
-- `agentdock-common` - For shared constants, validation functions, and error classes
+- `dockrion-common` - For shared constants, validation functions, and error classes
 - `pyyaml` (optional) - For YAML serialization support
 
 ### Design Principles
 - **Pure Validation**: No file I/O, only validates Python dictionaries
-- **Single Source of Truth**: Uses constants from `agentdock-common` package
+- **Single Source of Truth**: Uses constants from `dockrion-common` package
 - **Extensible**: All models use `ConfigDict(extra="allow")` for future fields
 - **Security-First**: Injection prevention, port validation, value whitelisting
 - **Type-Safe**: Full Pydantic v2 support with comprehensive validators
@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Refactored to Use Constants from Common Package
 - **Breaking Change**: Replaced hardcoded `Literal` types with `str` types validated against constants
-- Changed field types to validate against `agentdock-common` constants:
+- Changed field types to validate against `dockrion-common` constants:
   - `AgentConfig.framework`: Now `str` validated against `SUPPORTED_FRAMEWORKS`
   - `ModelConfig.provider`: Now `str` validated against `SUPPORTED_PROVIDERS`
   - `AuthConfig.mode`: Now `str` validated against `SUPPORTED_AUTH_MODES`
@@ -71,7 +71,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added documentation comments explaining single source of truth approach
 
 #### Benefits of This Change
-- **No Duplication**: Constants defined once in `agentdock-common`, used everywhere
+- **No Duplication**: Constants defined once in `dockrion-common`, used everywhere
 - **Easy Maintenance**: Adding new frameworks/providers only requires updating `common/constants.py`
 - **Consistent Validation**: All packages use the same validation rules
 - **Runtime Flexibility**: Constants can be extended without recompiling schema models
@@ -85,8 +85,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed (November 12, 2024 - Dependency Versioning)
-- **Updated agentdock-common dependency** to use proper version constraints
-- Changed from `agentdock-common` (unversioned) to `agentdock-common>=0.1.1,<0.2.0`
+- **Updated dockrion-common dependency** to use proper version constraints
+- Changed from `dockrion-common` (unversioned) to `dockrion-common>=0.1.1,<0.2.0`
 - Ensures compatibility with common v0.1.x (ConfigDict support)
 - Blocks potentially breaking v0.2.0 until schema is tested against it
 - See `docs/PACKAGE_VERSIONING_STRATEGY.md` for upgrade guidelines

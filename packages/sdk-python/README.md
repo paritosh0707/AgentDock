@@ -1,8 +1,8 @@
-# AgentDock SDK
+# Dockrion SDK
 
 **Python SDK for deploying and managing AI agents**
 
-The AgentDock SDK provides a simple, powerful interface for working with AI agents defined in Dockfiles. Use it to load, validate, deploy, and invoke agents locally or remotely.
+The Dockrion SDK provides a simple, powerful interface for working with AI agents defined in Dockfiles. Use it to load, validate, deploy, and invoke agents locally or remotely.
 
 ## Features
 
@@ -30,7 +30,7 @@ uv sync --extra dev
 ### 1. Load and Validate a Dockfile
 
 ```python
-from agentdock_sdk import load_dockspec, validate_dockspec
+from dockrion_sdk import load_dockspec, validate_dockspec
 
 # Load a Dockfile
 spec = load_dockspec("Dockfile.yaml")
@@ -48,7 +48,7 @@ else:
 ### 2. Invoke an Agent Locally
 
 ```python
-from agentdock_sdk import invoke_local
+from dockrion_sdk import invoke_local
 
 # Invoke agent directly (no server needed)
 result = invoke_local("Dockfile.yaml", {
@@ -62,7 +62,7 @@ print(f"Result: {result}")
 ### 3. Run Agent as Local Server
 
 ```python
-from agentdock_sdk import run_local
+from dockrion_sdk import run_local
 
 # Start agent server (development mode)
 proc = run_local("Dockfile.yaml")
@@ -77,14 +77,14 @@ proc.terminate()
 ### 4. Deploy Agent to Docker
 
 ```python
-from agentdock_sdk import deploy
+from dockrion_sdk import deploy
 
 # Build Docker image
 result = deploy("Dockfile.yaml", target="local")
 print(f"Built image: {result['image']}")
 
 # Run the container:
-# docker run -p 8080:8080 agentdock/your-agent:dev
+# docker run -p 8080:8080 Dockrion/your-agent:dev
 ```
 
 ## API Reference
@@ -125,7 +125,7 @@ Invoke an agent locally without starting a server.
 
 **Raises:**
 - `ValidationError`: If Dockfile is invalid
-- `AgentDockError`: If agent loading or invocation fails
+- `DockrionError`: If agent loading or invocation fails
 
 **Example:**
 ```python
@@ -182,7 +182,7 @@ Deploy an agent to a target environment.
   - `agent_name` (str): Name of the agent
 
 **Raises:**
-- `AgentDockError`: If deployment fails
+- `DockrionError`: If deployment fails
 
 **Example:**
 ```python
@@ -204,7 +204,7 @@ Run an agent locally without Docker (development mode).
 - `subprocess.Popen`: Running server process
 
 **Raises:**
-- `AgentDockError`: If startup fails
+- `DockrionError`: If startup fails
 
 **Example:**
 ```python
@@ -289,7 +289,7 @@ spec = load_dockspec("Dockfile.yaml")
 ### Development Workflow
 
 ```python
-from agentdock_sdk import validate_dockspec, run_local
+from dockrion_sdk import validate_dockspec, run_local
 
 # 1. Validate Dockfile
 result = validate_dockspec("Dockfile.yaml")
@@ -315,7 +315,7 @@ proc.terminate()
 ### Production Deployment
 
 ```python
-from agentdock_sdk import deploy
+from dockrion_sdk import deploy
 
 # Build Docker image
 result = deploy("Dockfile.yaml", target="local")
@@ -328,7 +328,7 @@ print(f"Built: {result['image']}")
 ### Testing Agent Logic
 
 ```python
-from agentdock_sdk import invoke_local
+from dockrion_sdk import invoke_local
 
 # Test cases
 test_cases = [
@@ -345,11 +345,11 @@ for case in test_cases:
 
 ## Error Handling
 
-The SDK uses typed exceptions from `agentdock-common`:
+The SDK uses typed exceptions from `dockrion-common`:
 
 ```python
-from agentdock_sdk import load_dockspec, invoke_local
-from agentdock_common.errors import ValidationError, AgentDockError
+from dockrion_sdk import load_dockspec, invoke_local
+from dockrion_common.errors import ValidationError, DockrionError
 
 try:
     spec = load_dockspec("Dockfile.yaml")
@@ -357,7 +357,7 @@ try:
 except ValidationError as e:
     # Dockfile validation failed
     print(f"Validation error: {e}")
-except AgentDockError as e:
+except DockrionError as e:
     # Agent execution failed
     print(f"Agent error: {e}")
 except Exception as e:
@@ -381,7 +381,7 @@ uv run pytest tests/ -v
 uv run pytest tests/test_client.py -v
 
 # Run with coverage
-uv run pytest tests/ --cov=agentdock_sdk --cov-report=term-missing
+uv run pytest tests/ --cov=dockrion_sdk --cov-report=term-missing
 ```
 
 ---
@@ -392,7 +392,7 @@ The SDK follows a clean architecture:
 
 ```
 ┌─────────────────────────────────────────┐
-│         AgentDock SDK (This Package)    │
+│         Dockrion SDK (This Package)    │
 │  ┌──────────┐  ┌──────────┐  ┌────────┐│
 │  │ client.py│  │validate.py│  │deploy.py│
 │  │          │  │          │  │        ││
@@ -414,9 +414,9 @@ The SDK follows a clean architecture:
 ```
 
 **Dependencies:**
-- `agentdock-schema`: Dockfile schema and validation
-- `agentdock-common`: Shared utilities and errors
-- `agentdock-adapters`: Framework adapters for agent execution
+- `dockrion-schema`: Dockfile schema and validation
+- `dockrion-common`: Shared utilities and errors
+- `dockrion-adapters`: Framework adapters for agent execution
 
 ---
 
@@ -470,8 +470,8 @@ agent:
 ### With Adapters Package
 
 ```python
-from agentdock_sdk import load_dockspec
-from agentdock_adapters import get_adapter
+from dockrion_sdk import load_dockspec
+from dockrion_adapters import get_adapter
 
 # Load Dockfile
 spec = load_dockspec("Dockfile.yaml")
@@ -488,10 +488,10 @@ The CLI package uses SDK functions internally:
 
 ```bash
 # CLI uses sdk.validate_dockspec()
-agentdock validate Dockfile.yaml
+Dockrion validate Dockfile.yaml
 
 # CLI uses sdk.deploy()
-agentdock deploy Dockfile.yaml
+Dockrion deploy Dockfile.yaml
 ```
 
 ---
@@ -531,7 +531,7 @@ Contributions are welcome! Please:
 
 ## License
 
-Part of the AgentDock project. See root LICENSE file.
+Part of the Dockrion project. See root LICENSE file.
 
 ---
 

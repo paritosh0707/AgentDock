@@ -1,11 +1,11 @@
 [project]
-name = "agentdock-cli"
+name = "dockrion-cli"
 version = "0.1.0"
-description = "Command-line interface for AgentDock - Deploy and manage AI agents"
+description = "Command-line interface for Dockrion - Deploy and manage AI agents"
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [
-    {name = "AgentDock Team"}
+    {name = "Dockrion Team"}
 ]
 keywords = ["ai", "agents", "cli", "deployment", "langgraph", "langchain"]
 classifiers = [
@@ -18,7 +18,7 @@ classifiers = [
 dependencies = [
     "typer>=0.12.0",
     "rich>=13.7.0",
-    "agentdock-sdk>=0.1.0"
+    "dockrion-sdk>=0.1.0"
 ]
 
 [project.optional-dependencies]
@@ -29,7 +29,7 @@ dev = [
 ]
 
 [project.scripts]
-agentdock = "agentdock_cli.main:app"
+dockrion = "dockrion_cli.main:app"
 
 [build-system]
 requires = ["setuptools"]

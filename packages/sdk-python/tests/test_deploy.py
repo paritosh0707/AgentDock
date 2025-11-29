@@ -1,15 +1,15 @@
 """Tests for deploy.py module."""
 import pytest
 from unittest.mock import Mock, patch, MagicMock
-from agentdock_sdk.deploy import (
+from dockrion_sdk.deploy import (
     deploy,
     run_local,
     _generate_requirements,
     _render_dockerfile,
     _render_runtime
 )
-from agentdock_schema.dockfile_v1 import DockSpec
-from agentdock_common.errors import AgentDockError
+from dockrion_schema.dockfile_v1 import DockSpec
+from dockrion_common.errors import DockrionError
 
 
 class TestGenerateRequirements:
@@ -17,19 +17,19 @@ class TestGenerateRequirements:
     
     def test_generate_requirements_langgraph(self, sample_dockfile):
         """Test requirements generation for LangGraph agent."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         spec = load_dockspec(sample_dockfile)
         requirements = _generate_requirements(spec)
         
         assert "fastapi" in requirements
         assert "uvicorn" in requirements
         assert "prometheus-client" in requirements
-        assert "agentdock-adapters" in requirements
+        assert "dockrion-adapters" in requirements
         assert "langgraph" in requirements
     
     def test_generate_requirements_langchain(self, tmp_path):
         """Test requirements generation for LangChain agent."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         dockfile = tmp_path / "Dockfile.yaml"
         dockfile.write_text("""
 version: "1.0"
@@ -60,7 +60,7 @@ class TestRenderDockerfile:
     
     def test_render_dockerfile_basic(self, sample_dockfile):
         """Test Dockerfile generation."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         spec = load_dockspec(sample_dockfile)
         dockerfile = _render_dockerfile(spec)
         
@@ -71,7 +71,7 @@ class TestRenderDockerfile:
     
     def test_render_dockerfile_custom_port(self, tmp_path):
         """Test Dockerfile with custom port."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         dockfile = tmp_path / "Dockfile.yaml"
         dockfile.write_text("""
 version: "1.0"
@@ -102,7 +102,7 @@ class TestRenderRuntime:
     
     def test_render_runtime_basic(self, sample_dockfile):
         """Test runtime code generation."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         spec = load_dockspec(sample_dockfile)
         runtime = _render_runtime(spec)
         
@@ -115,7 +115,7 @@ class TestRenderRuntime:
     
     def test_render_runtime_with_policies(self, tmp_path):
         """Test runtime generation with policies."""
-        from agentdock_sdk.client import load_dockspec
+        from dockrion_sdk.client import load_dockspec
         dockfile = tmp_path / "Dockfile.yaml"
         dockfile.write_text("""
 version: "1.0"
@@ -158,7 +158,7 @@ class TestDeploy:
         result = deploy(sample_dockfile, target="local")
         
         assert result["status"] == "built"
-        assert "agentdock/" in result["image"]
+        assert "dockrion/" in result["image"]
         assert result["agent_name"] == "test-agent"
         mock_check_output.assert_called_once()
         mock_check_call.assert_called_once()
@@ -168,7 +168,7 @@ class TestDeploy:
         """Test deployment when Docker is not available."""
         mock_check_output.side_effect = FileNotFoundError()
         
-        with pytest.raises(AgentDockError) as exc_info:
+        with pytest.raises(DockrionError) as exc_info:
             deploy(sample_dockfile, target="local")
         assert "docker" in str(exc_info.value).lower()
     
@@ -180,7 +180,7 @@ class TestDeploy:
         mock_check_output.return_value = "Docker version 20.10.0"
         mock_check_call.side_effect = subprocess.CalledProcessError(1, "docker build")
         
-        with pytest.raises(AgentDockError):
+        with pytest.raises(DockrionError):
             deploy(sample_dockfile, target="local")
 
 
@@ -202,9 +202,9 @@ class TestRunLocal:
         
         assert proc is mock_process
         # Check that runtime directory was created
-        assert (tmp_path / ".agentdock_runtime").exists()
-        assert (tmp_path / ".agentdock_runtime" / "main.py").exists()
-        assert (tmp_path / ".agentdock_runtime" / "requirements.txt").exists()
+        assert (tmp_path / ".dockrion_runtime").exists()
+        assert (tmp_path / ".dockrion_runtime" / "main.py").exists()
+        assert (tmp_path / ".dockrion_runtime" / "requirements.txt").exists()
     
     @patch('subprocess.check_call')
     def test_run_local_install_failure(self, mock_check_call, sample_dockfile, tmp_path, monkeypatch):
@@ -213,7 +213,7 @@ class TestRunLocal:
         monkeypatch.chdir(tmp_path)
         mock_check_call.side_effect = subprocess.CalledProcessError(1, "pip install")
         
-        with pytest.raises(AgentDockError) as exc_info:
+        with pytest.raises(DockrionError) as exc_info:
             run_local(sample_dockfile)
         assert "dependencies" in str(exc_info.value).lower() or "install" in str(exc_info.value).lower()
 

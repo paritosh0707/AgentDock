@@ -1,8 +1,8 @@
-# AgentDock Schema Package Specification
+# Dockrion Schema Package Specification
 
 ## Purpose
 
-The `agentdock-schema` package is the **type system and validation layer** for AgentDock. It transforms the Dockfile YAML specification into executable, type-safe Pydantic models that every service depends on.
+The `dockrion-schema` package is the **type system and validation layer** for Dockrion. It transforms the Dockfile YAML specification into executable, type-safe Pydantic models that every service depends on.
 
 **One sentence summary:** Schema ensures all services agree on what constitutes a valid Dockfile, catching errors before deployment instead of at runtime.
 
@@ -38,7 +38,7 @@ Schema Package (foundation)
 └─→ Dashboard (edits validated configs)
 ```
 
-**Key Point:** Schema has ZERO dependencies on other AgentDock packages. Others depend on it.
+**Key Point:** Schema has ZERO dependencies on other Dockrion packages. Others depend on it.
 
 ---
 
@@ -159,14 +159,14 @@ dev = [
 ```
 
 **Why minimal dependencies:**
-- Schema must have ZERO dependencies on other AgentDock packages
+- Schema must have ZERO dependencies on other Dockrion packages
 - Keeps it as the foundational layer
 - Allows other packages to import schema without circular dependencies
 - PyYAML is only for serialization (optional), not required for validation
 
 ---
 
-### Modules Schema Will Use FROM Other AgentDock Packages
+### Modules Schema Will Use FROM Other Dockrion Packages
 
 **❌ NONE in MVP!**
 
@@ -193,7 +193,7 @@ class DockfileError(Exception):
 # When common package is ready:
 # Option 1: Replace with import
 try:
-    from agentdock_common.errors import DockfileError, ValidationError
+    from dockrion_common.errors import DockfileError, ValidationError
 except ImportError:
     # Fallback to local definitions (for backward compatibility)
     class DockfileError(Exception):
@@ -204,8 +204,8 @@ except ImportError:
 **Migration Path:**
 1. **MVP (Week 1-2)**: Schema has `errors.py` and inline constants
 2. **Integration (Week 3+)**: When `common` package ready:
-   - Replace `schema/errors.py` with `from agentdock_common.errors import ...`
-   - Replace inline constants with `from agentdock_common.constants import ...`
+   - Replace `schema/errors.py` with `from dockrion_common.errors import ...`
+   - Replace inline constants with `from dockrion_common.constants import ...`
    - Schema maintains same API (consumers don't change)
 3. **Deprecation**: Remove `schema/errors.py` file, keep imports only
 
@@ -293,7 +293,7 @@ Schema is heavily consumed by all other packages:
                ▼
 ┌─────────────────────────────────────────┐
 │ Generated runtime uses schema            │
-│ .agentdock_runtime/main.py              │
+│ .dockrion_runtime/main.py              │
 │   SPEC = {spec.model_dump()}  ← SCHEMA  │
 │   ADAPTER = get_adapter(                │
 │     SPEC['agent']['framework']          │
@@ -419,7 +419,7 @@ Deferred to later when corresponding services are built:
 - ✅ Validate Dockfile in <100ms
 - ✅ 100% type coverage (mypy strict)
 - ✅ >90% test coverage
-- ✅ Zero dependencies on other AgentDock packages
+- ✅ Zero dependencies on other Dockrion packages
 
 ### User Experience
 - ✅ Clear error: "Error 4005 at auth.jwt.secret_key: Field required when mode='jwt'. Hint: Add auth.jwt.secret_key: '${JWT_SECRET}'"
@@ -435,7 +435,7 @@ Deferred to later when corresponding services are built:
 
 ## Future: Dockfile v2
 
-When AgentDock v2 launches with multi-agent workflows:
+When Dockrion v2 launches with multi-agent workflows:
 
 - Add `dockfile_v2.py` alongside v1
 - Parser routes based on `version: "2.0"` field
@@ -513,7 +513,7 @@ SUPPORTED_FRAMEWORKS = ["langgraph", "langchain"]
 """
 Error classes for schema validation.
 
-NOTE: These will be migrated to agentdock_common.errors once that package is ready.
+NOTE: These will be migrated to dockrion_common.errors once that package is ready.
 Interface is designed to match common.errors exactly.
 """
 
@@ -556,13 +556,13 @@ class InvalidSchemaError(DockfileError):
 # schema/errors.py (post-integration)
 
 """
-Error classes imported from agentdock_common.
+Error classes imported from dockrion_common.
 
 Maintained here for backward compatibility with existing imports.
 """
 
 try:
-    from agentdock_common.errors import (
+    from dockrion_common.errors import (
         DockfileError,
         InvalidSchemaError,
         EntrypointNotFoundError,
@@ -572,7 +572,7 @@ except ImportError:
     # Fallback for environments where common not installed
     # (shouldn't happen in production, but useful for development)
     import warnings
-    warnings.warn("agentdock_common not found, using local error definitions")
+    warnings.warn("dockrion_common not found, using local error definitions")
     
     # Keep local definitions as fallback
     class DockfileError(Exception):
@@ -624,7 +624,7 @@ except ImportError:
 - Extensible design → add Policies/Auth/Observability when services ready
 - No breaking changes when adding new fields
 
-**Bottom line:** Schema package is not overhead. It's the extensible contract that makes AgentDock reliable today and tomorrow.
+**Bottom line:** Schema package is not overhead. It's the extensible contract that makes Dockrion reliable today and tomorrow.
 
 ---
 

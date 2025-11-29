@@ -108,7 +108,7 @@ def from_dict(data: dict) -> DockSpec:
 ```python
 # client.py - File I/O and orchestration
 import yaml
-from agentdock_schema.dockfile_v1 import DockSpec
+from dockrion_schema.dockfile_v1 import DockSpec
 
 def load_dockspec(path: str) -> DockSpec:
     """Load and validate Dockfile from disk"""
@@ -141,7 +141,7 @@ def expand_env_vars(data: dict) -> dict:
 def save_dockspec(spec: DockSpec, path: str) -> None:
     """Save validated spec to file"""
     # Use schema's serialization
-    from agentdock_schema.serialization import to_yaml_string
+    from dockrion_schema.serialization import to_yaml_string
     yaml_content = to_yaml_string(spec)
     
     # SDK handles file writing
@@ -155,8 +155,8 @@ def save_dockspec(spec: DockSpec, path: str) -> None:
 
 ```python
 # validate_cmd.py - Uses SDK
-from agentdock_sdk.client import load_dockspec
-from agentdock_common.errors import ValidationError
+from dockrion_sdk.client import load_dockspec
+from dockrion_common.errors import ValidationError
 import typer
 
 @app.command()
@@ -322,10 +322,10 @@ If schema package was already implemented with file I/O:
 ### Step 3: Update Imports
 ```python
 # Before (wrong):
-from agentdock_schema.parser import load_dockfile
+from dockrion_schema.parser import load_dockfile
 
 # After (correct):
-from agentdock_sdk.client import load_dockspec
+from dockrion_sdk.client import load_dockspec
 ```
 
 ---

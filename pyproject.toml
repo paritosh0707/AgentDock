@@ -10,13 +10,13 @@ members = [
 ]
 
 [tool.uv.sources]
-agentdock-common = { workspace = true }
-agentdock-schema = { workspace = true }
-agentdock-adapters = { workspace = true }
-agentdock-policy = { workspace = true }
-agentdock-telemetry = { workspace = true }
-agentdock-sdk = { workspace = true }
-agentdock-cli = { workspace = true }
+dockrion-common = { workspace = true }
+dockrion-schema = { workspace = true }
+dockrion-adapters = { workspace = true }
+dockrion-policy = { workspace = true }
+dockrion-telemetry = { workspace = true }
+dockrion-sdk = { workspace = true }
+dockrion-cli = { workspace = true }
 
 # Optional shared tool config
 [tool.ruff]

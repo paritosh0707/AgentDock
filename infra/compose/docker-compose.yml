@@ -1,5 +1,5 @@
 version: "3.9"
 services:
   agent-example:
-    image: agentdock/invoice-copilot:dev
+    image: dockrion/invoice-copilot:dev
     ports: ["8080:8080"]

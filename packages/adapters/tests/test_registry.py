@@ -9,7 +9,7 @@ Tests:
 """
 
 import pytest
-from agentdock_adapters import (
+from dockrion_adapters import (
     get_adapter,
     register_adapter,
     list_supported_frameworks,
@@ -17,7 +17,7 @@ from agentdock_adapters import (
     get_adapter_info,
     LangGraphAdapter,
 )
-from agentdock_common import ValidationError
+from dockrion_common import ValidationError
 
 
 # =============================================================================

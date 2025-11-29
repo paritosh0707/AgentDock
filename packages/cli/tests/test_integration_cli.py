@@ -7,7 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 from typer.testing import CliRunner
-from agentdock_cli.main import app
+from dockrion_cli.main import app
 
 runner = CliRunner()
 
@@ -196,7 +196,7 @@ class TestVersionCommand:
         """Test that version shows SDK version."""
         result = runner.invoke(app, ["version"])
         assert result.exit_code == 0
-        assert "SDK" in result.stdout or "agentdock" in result.stdout.lower()
+        assert "SDK" in result.stdout or "dockrion" in result.stdout.lower()
 
 
 class TestDoctorCommand:

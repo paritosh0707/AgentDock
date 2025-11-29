@@ -1,3 +1,3 @@
-# AgentDock PRD
+# Dockrion PRD
 
 Sections 1–12 live here.

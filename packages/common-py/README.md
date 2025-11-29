@@ -1,6 +1,6 @@
-# AgentDock Common Package
+# Dockrion Common Package
 
-Shared utilities and primitives used across all AgentDock packages and services.
+Shared utilities and primitives used across all Dockrion packages and services.
 
 ## Installation
 
@@ -10,7 +10,7 @@ pip install -e packages/common-py
 
 ## Overview
 
-The `agentdock-common` package provides the foundation layer for AgentDock, offering:
+The `dockrion-common` package provides the foundation layer for Dockrion, offering:
 
 - **Exception Classes**: Consistent error handling across all packages
 - **Constants**: Single source of truth for supported values and defaults
@@ -24,13 +24,13 @@ The `agentdock-common` package provides the foundation layer for AgentDock, offe
 ### Error Handling
 
 ```python
-from agentdock_common import ValidationError, AuthError
+from dockrion_common import ValidationError, AuthError
 
 # Raise validation errors
 if not valid:
     raise ValidationError("Invalid entrypoint format")
 
-# Catch AgentDock errors
+# Catch Dockrion errors
 try:
     validate_agent_name("My-Agent")
 except ValidationError as e:
@@ -40,21 +40,21 @@ except ValidationError as e:
 ### Constants
 
 ```python
-from agentdock_common import SUPPORTED_FRAMEWORKS, PERMISSIONS
+from dockrion_common import SUPPORTED_FRAMEWORKS, PERMISSIONS
 
 # Check supported values
 if framework not in SUPPORTED_FRAMEWORKS:
     raise ValidationError(f"Unsupported framework: {framework}")
 
 # Use default values
-from agentdock_common import DEFAULT_PORT, DEFAULT_HOST
+from dockrion_common import DEFAULT_PORT, DEFAULT_HOST
 server.run(host=DEFAULT_HOST, port=DEFAULT_PORT)
 ```
 
 ### Validation
 
 ```python
-from agentdock_common import validate_entrypoint, validate_agent_name, parse_rate_limit
+from dockrion_common import validate_entrypoint, validate_agent_name, parse_rate_limit
 
 # Validate entrypoint
 module, func = validate_entrypoint("app.main:build_graph")
@@ -72,7 +72,7 @@ count, seconds = parse_rate_limit("1000/m")
 ### Authentication
 
 ```python
-from agentdock_common import generate_api_key, validate_api_key, check_permission
+from dockrion_common import generate_api_key, validate_api_key, check_permission
 
 # Generate API keys
 new_key = generate_api_key()  # Returns: "agd_..."
@@ -93,7 +93,7 @@ if check_permission(user_permissions, "deploy"):
 ### HTTP Responses
 
 ```python
-from agentdock_common import success_response, error_response, ValidationError
+from dockrion_common import success_response, error_response, ValidationError
 
 # Success response
 return success_response({"id": "123", "status": "running"})
@@ -107,7 +107,7 @@ except ValidationError as e:
 # Returns: {"success": False, "error": "...", "code": "VALIDATION_ERROR"}
 
 # Paginated response
-from agentdock_common import paginated_response
+from dockrion_common import paginated_response
 
 return paginated_response(
     items=[{"id": "1"}, {"id": "2"}],
@@ -120,7 +120,7 @@ return paginated_response(
 ### Application Logging
 
 ```python
-from agentdock_common import get_logger, set_request_id
+from dockrion_common import get_logger, set_request_id
 
 # Create logger for your service
 logger = get_logger("controller")
@@ -156,7 +156,7 @@ except Exception as e:
 
 | Class | Code | Use Case |
 |-------|------|----------|
-| `AgentDockError` | INTERNAL_ERROR | Base exception for all AgentDock errors |
+| `DockrionError` | INTERNAL_ERROR | Base exception for all Dockrion errors |
 | `ValidationError` | VALIDATION_ERROR | Invalid input or configuration |
 | `AuthError` | AUTH_ERROR | Authentication/authorization failures |
 | `RateLimitError` | RATE_LIMIT_EXCEEDED | Rate limit exceeded |
@@ -169,7 +169,7 @@ except Exception as e:
 ### Constants
 
 #### Version Info
-- `AGENTDOCK_VERSION`: Platform version
+- `dockrion_VERSION`: Platform version
 - `SUPPORTED_DOCKFILE_VERSIONS`: Supported Dockfile versions
 - `API_VERSION`: API version
 
@@ -232,13 +232,13 @@ except Exception as e:
 
 | Function | Description | Returns |
 |----------|-------------|---------|
-| `get_logger(service_name, log_level)` | Create a logger for a service | `AgentDockLogger` |
-| `configure_logging(service_name, log_level)` | Configure and get logger | `AgentDockLogger` |
+| `get_logger(service_name, log_level)` | Create a logger for a service | `DockrionLogger` |
+| `configure_logging(service_name, log_level)` | Configure and get logger | `DockrionLogger` |
 | `set_request_id(request_id)` | Set correlation ID for current context | None |
 | `get_request_id()` | Get current correlation ID | `str` or `None` |
 | `clear_request_id()` | Clear correlation ID | None |
 
-#### AgentDockLogger Methods
+#### DockrionLogger Methods
 
 | Method | Description | Example |
 |--------|-------------|---------|
@@ -266,14 +266,14 @@ pytest tests/
 ### Type Checking
 
 ```bash
-mypy agentdock_common/
+mypy dockrion_common/
 ```
 
 ## Design Principles
 
 1. **Single Source of Truth**: Constants defined here are used by all other packages
 2. **Pure Utilities**: No I/O operations, no side effects
-3. **Zero Internal Dependencies**: Foundation layer, doesn't depend on other AgentDock packages
+3. **Zero Internal Dependencies**: Foundation layer, doesn't depend on other Dockrion packages
 4. **Minimal**: Only what's shared by 3+ packages
 5. **Stable**: API designed for backward compatibility
 6. **Modern**: Uses Pydantic V2 best practices (ConfigDict, no deprecated features)
@@ -290,7 +290,7 @@ When common package needs to be extended:
 ## Support
 
 For issues or questions:
-- GitHub Issues: [AgentDock Repository](https://github.com/paritosh0707/AgentDock)
+- GitHub Issues: [Dockrion Repository](https://github.com/paritosh0707/Dockrion)
 - Documentation: See `docs/COMMON_PACKAGE_IMPLEMENTATION_PLAN.md`
 
 ## License

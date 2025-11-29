@@ -1,6 +1,6 @@
 # Package Updates - November 12, 2024
 
-Summary of changes made to `agentdock-common` and `agentdock-schema` packages.
+Summary of changes made to `dockrion-common` and `dockrion-schema` packages.
 
 ---
 
@@ -27,7 +27,7 @@ class AgentConfig(BaseModel):
 
 **After:**
 ```python
-from agentdock_common import SUPPORTED_FRAMEWORKS
+from dockrion_common import SUPPORTED_FRAMEWORKS
 
 class AgentConfig(BaseModel):
     framework: str  # Validated against SUPPORTED_FRAMEWORKS from common
@@ -41,7 +41,7 @@ class AgentConfig(BaseModel):
 
 #### Fields Updated
 
-All the following fields now use constants from `agentdock-common`:
+All the following fields now use constants from `dockrion-common`:
 
 | Field | Model | Constant Used |
 |-------|-------|---------------|
@@ -68,7 +68,7 @@ All the following fields now use constants from `agentdock-common`:
 
 ### Files Modified
 
-- `packages/schema/agentdock_schema/dockfile_v1.py` - Updated field types and validators
+- `packages/schema/dockrion_schema/dockfile_v1.py` - Updated field types and validators
 - `packages/schema/README.md` - Added documentation about single source of truth
 - `packages/schema/CHANGELOG.md` - Created with full change history
 
@@ -127,7 +127,7 @@ All 4 HTTP response models were updated:
 
 ### Files Modified
 
-- `packages/common-py/agentdock_common/http_models.py` - Updated all models
+- `packages/common-py/dockrion_common/http_models.py` - Updated all models
 - `packages/common-py/README.md` - Updated design principles
 - `packages/common-py/CHANGELOG.md` - Created with full change history
 
@@ -236,7 +236,7 @@ These changes strengthen the package architecture:
 ### Schema Package
 ```bash
 cd packages/schema
-uv run pytest tests/ --cov=agentdock_schema --cov-report=term-missing
+uv run pytest tests/ --cov=dockrion_schema --cov-report=term-missing
 ```
 
 **Results:**
@@ -290,7 +290,7 @@ uv run pytest tests/ -v
 
 1. Add to `common/errors.py`:
    ```python
-   class NewError(AgentDockError):
+   class NewError(DockrionError):
        def __init__(self, message: str):
            super().__init__(message, code="NEW_ERROR_CODE")
    ```
@@ -350,7 +350,7 @@ git revert <commit-hash>
 
 **Changes By**: Cursor AI Assistant  
 **Date**: November 12, 2024  
-**Packages Updated**: `agentdock-common` v0.1.1, `agentdock-schema` v0.1.0  
+**Packages Updated**: `dockrion-common` v0.1.1, `dockrion-schema` v0.1.0  
 **Test Coverage**: 95% (schema), 97% (common)  
 
 ---

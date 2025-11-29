@@ -1,5 +1,5 @@
 """
-Advanced features demo for agentdock-adapters.
+Advanced features demo for dockrion-adapters.
 
 Demonstrates:
 1. Strict validation mode
@@ -15,7 +15,7 @@ from pathlib import Path
 # Add current directory to Python path for mock agent imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from agentdock_adapters import (
+from dockrion_adapters import (
     LangGraphAdapter,
     AdapterLoadError,
     InvalidAgentError,
@@ -23,7 +23,7 @@ from agentdock_adapters import (
 
 
 print("=" * 70)
-print("AGENTDOCK ADAPTERS - ADVANCED FEATURES DEMO")
+print("dockrion ADAPTERS - ADVANCED FEATURES DEMO")
 print("=" * 70)
 print()
 

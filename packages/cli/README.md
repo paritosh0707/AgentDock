@@ -1,8 +1,8 @@
-# AgentDock CLI
+# Dockrion CLI
 
 **Command-line interface for deploying and managing AI agents**
 
-The AgentDock CLI provides a simple, powerful interface for working with AI agents. Use it to validate Dockfiles, test agents locally, build Docker images, and deploy to production.
+The Dockrion CLI provides a simple, powerful interface for working with AI agents. Use it to validate Dockfiles, test agents locally, build Docker images, and deploy to production.
 
 ## Features
 
@@ -29,27 +29,27 @@ uv sync --extra dev
 
 ```bash
 # 1. Create a new agent project
-agentdock init my-agent
+Dockrion init my-agent
 
 # 2. Edit the generated Dockfile.yaml
 # (implement your agent logic)
 
 # 3. Validate your configuration
-agentdock validate
+Dockrion validate
 
 # 4. Test your agent locally
-agentdock test --payload '{"text": "hello"}'
+Dockrion test --payload '{"text": "hello"}'
 
 # 5. Run development server
-agentdock run
+Dockrion run
 
 # 6. Build for production
-agentdock build
+Dockrion build
 ```
 
 ## Commands
 
-### `agentdock validate [PATH]`
+### `Dockrion validate [PATH]`
 
 Validate a Dockfile configuration.
 
@@ -59,14 +59,14 @@ Validate a Dockfile configuration.
 
 **Examples:**
 ```bash
-agentdock validate
-agentdock validate custom/Dockfile.yaml
-agentdock validate --verbose
+Dockrion validate
+Dockrion validate custom/Dockfile.yaml
+Dockrion validate --verbose
 ```
 
 ---
 
-### `agentdock test [PATH]`
+### `Dockrion test [PATH]`
 
 Test an agent locally without starting a server.
 
@@ -79,18 +79,18 @@ Test an agent locally without starting a server.
 **Examples:**
 ```bash
 # Test with inline JSON
-agentdock test --payload '{"text": "analyze this"}'
+Dockrion test --payload '{"text": "analyze this"}'
 
 # Test with payload file
-agentdock test --payload-file input.json
+Dockrion test --payload-file input.json
 
 # Save output to file
-agentdock test -f input.json -o output.json
+Dockrion test -f input.json -o output.json
 ```
 
 ---
 
-### `agentdock build [PATH]`
+### `Dockrion build [PATH]`
 
 Build a Docker image for the agent.
 
@@ -100,14 +100,14 @@ Build a Docker image for the agent.
 
 **Examples:**
 ```bash
-agentdock build
-agentdock build custom/Dockfile.yaml
-agentdock build --verbose
+Dockrion build
+Dockrion build custom/Dockfile.yaml
+Dockrion build --verbose
 ```
 
 ---
 
-### `agentdock run [PATH]`
+### `Dockrion run [PATH]`
 
 Run agent server locally for development.
 
@@ -116,8 +116,8 @@ Run agent server locally for development.
 
 **Examples:**
 ```bash
-agentdock run
-agentdock run custom/Dockfile.yaml
+Dockrion run
+Dockrion run custom/Dockfile.yaml
 ```
 
 **Endpoints exposed:**
@@ -130,7 +130,7 @@ Press `Ctrl+C` to stop the server.
 
 ---
 
-### `agentdock logs AGENT`
+### `Dockrion logs AGENT`
 
 View logs from a running agent.
 
@@ -141,14 +141,14 @@ View logs from a running agent.
 
 **Examples:**
 ```bash
-agentdock logs invoice-copilot
-agentdock logs invoice-copilot --lines 50
-agentdock logs invoice-copilot --follow
+Dockrion logs invoice-copilot
+Dockrion logs invoice-copilot --lines 50
+Dockrion logs invoice-copilot --follow
 ```
 
 ---
 
-### `agentdock init NAME`
+### `Dockrion init NAME`
 
 Create a new Dockfile template.
 
@@ -158,25 +158,25 @@ Create a new Dockfile template.
 
 **Examples:**
 ```bash
-agentdock init my-agent
-agentdock init my-agent --output custom/Dockfile.yaml
-agentdock init my-agent --force
+Dockrion init my-agent
+Dockrion init my-agent --output custom/Dockfile.yaml
+Dockrion init my-agent --force
 ```
 
 ---
 
-### `agentdock version`
+### `Dockrion version`
 
-Show AgentDock version information.
+Show Dockrion version information.
 
 **Example:**
 ```bash
-agentdock version
+Dockrion version
 ```
 
 ---
 
-### `agentdock doctor`
+### `Dockrion doctor`
 
 Diagnose common issues with your setup.
 
@@ -184,11 +184,11 @@ Checks for:
 - Python version (3.12+)
 - Docker installation
 - Dockfile presence and validity
-- AgentDock package installations
+- Dockrion package installations
 
 **Example:**
 ```bash
-agentdock doctor
+Dockrion doctor
 ```
 
 ---
@@ -197,7 +197,7 @@ agentdock doctor
 
 ```bash
 # Step 1: Initialize a new agent
-agentdock init invoice-copilot
+Dockrion init invoice-copilot
 
 # Step 2: Edit Dockfile.yaml
 # Set entrypoint, configure model, define schema
@@ -206,16 +206,16 @@ agentdock init invoice-copilot
 # Create app/main.py with build_agent() function
 
 # Step 4: Validate configuration
-agentdock validate
+Dockrion validate
 # ✅ Dockfile is valid. Agent: invoice-copilot, Framework: langgraph
 
 # Step 5: Test locally
-agentdock test --payload '{"document_text": "INVOICE #123..."}'
+Dockrion test --payload '{"document_text": "INVOICE #123..."}'
 # ✅ Agent invocation successful
 # Output: { "vendor": "...", "total": 1299.0, ... }
 
 # Step 6: Run development server
-agentdock run
+Dockrion run
 # ✅ Server started at http://0.0.0.0:8080
 # Available endpoints:
 #   • POST http://0.0.0.0:8080/invoke
@@ -227,11 +227,11 @@ curl -X POST http://localhost:8080/invoke \
   -d '{"document_text": "INVOICE #123..."}'
 
 # Step 8: Build Docker image
-agentdock build
-# ✅ Successfully built image: agentdock/invoice-copilot:dev
+Dockrion build
+# ✅ Successfully built image: Dockrion/invoice-copilot:dev
 
 # Step 9: Deploy to production
-docker run -p 8080:8080 agentdock/invoice-copilot:dev
+docker run -p 8080:8080 Dockrion/invoice-copilot:dev
 ```
 
 ---
@@ -241,7 +241,7 @@ docker run -p 8080:8080 agentdock/invoice-copilot:dev
 The CLI provides helpful error messages with actionable tips:
 
 ```bash
-$ agentdock validate broken.yaml
+$ Dockrion validate broken.yaml
 ❌ Validation failed
 
 Validation Errors
@@ -276,13 +276,13 @@ Use `--quiet` flag for CI/CD:
 ```bash
 # GitLab CI
 script:
-  - agentdock validate --quiet
-  - agentdock test --payload-file test.json
-  - agentdock build
+  - Dockrion validate --quiet
+  - Dockrion test --payload-file test.json
+  - Dockrion build
 
 # GitHub Actions
 - name: Validate Dockfile
-  run: agentdock validate --quiet
+  run: Dockrion validate --quiet
 ```
 
 ### Docker Compose
@@ -296,7 +296,7 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    command: agentdock run
+    command: Dockrion run
 ```
 
 ---
@@ -311,14 +311,14 @@ services:
 docker --version
 
 # Run diagnostics
-agentdock doctor
+Dockrion doctor
 ```
 
 ### "File not found: Dockfile.yaml"
 
 **Solution:** Create a Dockfile:
 ```bash
-agentdock init my-agent
+Dockrion init my-agent
 ```
 
 ### "Invalid YAML in Dockfile"
@@ -345,11 +345,11 @@ The CLI wraps SDK functions with rich output:
 
 ```python
 # SDK usage (programmatic)
-from agentdock_sdk import invoke_local
+from dockrion_sdk import invoke_local
 result = invoke_local("Dockfile.yaml", payload)
 
 # CLI usage (terminal)
-$ agentdock test --payload '{"text": "test"}'
+$ Dockrion test --payload '{"text": "test"}'
 ```
 
 Both do the same thing, CLI adds:
@@ -374,12 +374,12 @@ uv run pytest tests/ -v
 uv run pytest tests/test_validate_cmd.py -v
 
 # Run with coverage
-uv run pytest tests/ --cov=agentdock_cli --cov-report=term-missing
+uv run pytest tests/ --cov=dockrion_cli --cov-report=term-missing
 ```
 
 ### Adding New Commands
 
-1. Create command file in `agentdock_cli/`:
+1. Create command file in `dockrion_cli/`:
 ```python
 # my_cmd.py
 import typer
@@ -409,7 +409,7 @@ app.command()(my_cmd.mycommand)
 ## Architecture
 
 ```
-agentdock (CLI)
+Dockrion (CLI)
 ├── validate    → sdk.validate_dockspec()
 ├── test        → sdk.invoke_local()
 ├── build       → sdk.deploy()
@@ -423,7 +423,7 @@ agentdock (CLI)
 **Dependencies:**
 - `typer` - CLI framework
 - `rich` - Terminal formatting
-- `agentdock-sdk` - Core functionality
+- `dockrion-sdk` - Core functionality
 
 ---
 
@@ -470,7 +470,7 @@ Contributions welcome! Please:
 
 ## License
 
-Part of the AgentDock project. See root LICENSE file.
+Part of the Dockrion project. See root LICENSE file.
 
 ---
 

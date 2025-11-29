@@ -1,12 +1,12 @@
 # Package Versioning Strategy
 
-Comprehensive guide for versioning AgentDock packages and managing dependencies.
+Comprehensive guide for versioning Dockrion packages and managing dependencies.
 
 ---
 
 ## Overview
 
-AgentDock follows **Semantic Versioning (SemVer)** for all packages. This document explains how to version packages, manage dependencies, and handle upgrades.
+Dockrion follows **Semantic Versioning (SemVer)** for all packages. This document explains how to version packages, manage dependencies, and handle upgrades.
 
 ---
 
@@ -28,13 +28,13 @@ Format: `MAJOR.MINOR.PATCH` (e.g., `1.2.3`)
 
 | Package | Version | Status |
 |---------|---------|--------|
-| `agentdock-common` | 0.1.1 | Development |
-| `agentdock-schema` | 0.1.0 | Development |
-| `agentdock-adapters` | TBD | Not started |
-| `agentdock-policy-engine` | TBD | Not started |
-| `agentdock-telemetry` | TBD | Not started |
-| `agentdock-sdk-python` | TBD | Not started |
-| `agentdock-cli` | TBD | Not started |
+| `dockrion-common` | 0.1.1 | Development |
+| `dockrion-schema` | 0.1.0 | Development |
+| `dockrion-adapters` | TBD | Not started |
+| `dockrion-policy-engine` | TBD | Not started |
+| `dockrion-telemetry` | TBD | Not started |
+| `dockrion-sdk-python` | TBD | Not started |
+| `dockrion-cli` | TBD | Not started |
 
 ---
 
@@ -47,7 +47,7 @@ Format: `MAJOR.MINOR.PATCH` (e.g., `1.2.3`)
 ```toml
 # packages/common-py/pyproject.toml
 [project]
-name = "agentdock-common"
+name = "dockrion-common"
 version = "0.1.1"
 dependencies = [
     "pydantic>=2.5,<3.0"  # Allow minor updates, block major
@@ -61,11 +61,11 @@ dependencies = [
 ```toml
 # packages/schema/pyproject.toml
 [project]
-name = "agentdock-schema"
+name = "dockrion-schema"
 version = "0.1.0"
 dependencies = [
     "pydantic>=2.5,<3.0",
-    "agentdock-common>=0.1.1,<0.2.0",  # Compatible with 0.1.x only
+    "dockrion-common>=0.1.1,<0.2.0",  # Compatible with 0.1.x only
 ]
 ```
 
@@ -79,7 +79,7 @@ dependencies = [
 
 ```toml
 dependencies = [
-    "agentdock-common~=0.1.1",  # Same as >=0.1.1,<0.2.0
+    "dockrion-common~=0.1.1",  # Same as >=0.1.1,<0.2.0
 ]
 ```
 
@@ -134,7 +134,7 @@ def validate_webhook_url(url: str):
 2. Update common CHANGELOG with new features
 3. **Update schema dependency**:
    ```toml
-   "agentdock-common>=0.2.0,<0.3.0"  # New range
+   "dockrion-common>=0.2.0,<0.3.0"  # New range
    ```
 4. Optionally add support for new framework in schema
 5. Update schema version: `0.1.0` → `0.2.0` (if using new features)
@@ -167,14 +167,14 @@ def validate_entrypoint(entrypoint: str, strict: bool = True):  # Added param
 3. **Update schema code** to use new API:
    ```python
    # Old
-   from agentdock_common import SUPPORTED_FRAMEWORKS
+   from dockrion_common import SUPPORTED_FRAMEWORKS
    
    # New
-   from agentdock_common import AGENT_FRAMEWORKS
+   from dockrion_common import AGENT_FRAMEWORKS
    ```
 4. **Update schema dependency**:
    ```toml
-   "agentdock-common>=1.0.0,<2.0.0"  # New major version range
+   "dockrion-common>=1.0.0,<2.0.0"  # New major version range
    ```
 5. Update schema version: `0.2.0` → `1.0.0` (breaking change propagates)
 6. Full test suite run
@@ -211,7 +211,7 @@ def validate_entrypoint(entrypoint: str, strict: bool = True):  # Added param
 #### Development Install (Editable)
 ```bash
 # Install both packages in dev mode
-cd AgentDock
+cd Dockrion
 pip install -e packages/common-py
 pip install -e packages/schema
 
@@ -223,10 +223,10 @@ uv pip install -e packages/schema
 #### Production Install (From PyPI - Future)
 ```bash
 # Will automatically resolve compatible versions
-pip install agentdock-schema
+pip install dockrion-schema
 
 # Explicitly pin versions
-pip install agentdock-common==0.1.1 agentdock-schema==0.1.0
+pip install dockrion-common==0.1.1 dockrion-schema==0.1.0
 ```
 
 ### For Developers (Upgrading Dependencies)
@@ -234,9 +234,9 @@ pip install agentdock-common==0.1.1 agentdock-schema==0.1.0
 #### Step 1: Check Current Versions
 ```bash
 cd packages/schema
-uv pip list | grep agentdock
-# agentdock-common    0.1.1
-# agentdock-schema    0.1.0
+uv pip list | grep Dockrion
+# dockrion-common    0.1.1
+# dockrion-schema    0.1.0
 ```
 
 #### Step 2: Update Common Package
@@ -254,12 +254,12 @@ cd packages/common-py
 
 # If common 0.1.x → 0.2.0 (minor)
 dependencies = [
-    "agentdock-common>=0.2.0,<0.3.0",  # Update range
+    "dockrion-common>=0.2.0,<0.3.0",  # Update range
 ]
 
 # If common 0.x.x → 1.0.0 (major)
 dependencies = [
-    "agentdock-common>=1.0.0,<2.0.0",  # Update range + code changes
+    "dockrion-common>=1.0.0,<2.0.0",  # Update range + code changes
 ]
 ```
 
@@ -378,13 +378,13 @@ git push origin v0.1.1
 
 ```toml
 # ✅ Good: Allow patch updates only
-"agentdock-common>=0.1.1,<0.2.0"
+"dockrion-common>=0.1.1,<0.2.0"
 
 # ⚠️ Risky: Allow any version
-"agentdock-common"
+"dockrion-common"
 
 # ⚠️ Too strict: Blocks bug fixes
-"agentdock-common==0.1.1"
+"dockrion-common==0.1.1"
 ```
 
 ### 2. **Document Breaking Changes**
@@ -401,10 +401,10 @@ git push origin v0.1.1
 ### Migration Guide
 ```python
 # Before
-from agentdock_common import SUPPORTED_FRAMEWORKS
+from dockrion_common import SUPPORTED_FRAMEWORKS
 
 # After
-from agentdock_common import AGENT_FRAMEWORKS
+from dockrion_common import AGENT_FRAMEWORKS
 ```
 ```
 
@@ -454,7 +454,7 @@ strategy:
 pip install -e packages/common-py -e packages/schema
 
 # Testing: Use specific versions
-pip install agentdock-common==0.1.1 agentdock-schema==0.1.0
+pip install dockrion-common==0.1.1 dockrion-schema==0.1.0
 ```
 
 ---
@@ -484,7 +484,7 @@ python -m build
 twine upload dist/*
 
 # 3. Users can install
-pip install agentdock-common agentdock-schema
+pip install dockrion-common dockrion-schema
 ```
 
 ---
@@ -526,7 +526,7 @@ requires-python = ">=3.12"  # Minimum Python version
 ### Dependency Specification
 ```toml
 # Allow minor updates in same major version
-"agentdock-common>=0.1.1,<0.2.0"
+"dockrion-common>=0.1.1,<0.2.0"
 ```
 
 ### Upgrade Checklist

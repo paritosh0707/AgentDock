@@ -1,5 +1,5 @@
 [project]
-name = "agentdock-policy"
+name = "dockrion-policy"
 version = "0.1.0"
 description = "Policy engine (redaction, tool gating)"
 requires-python = ">=3.12"

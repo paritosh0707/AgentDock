@@ -1,2 +1,2 @@
-"""Tests for agentdock_sdk package."""
+"""Tests for dockrion_sdk package."""
 

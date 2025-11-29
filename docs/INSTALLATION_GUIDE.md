@@ -1,6 +1,6 @@
-# AgentDock Package Installation Guide
+# Dockrion Package Installation Guide
 
-Complete guide for installing all AgentDock packages in your development environment.
+Complete guide for installing all Dockrion packages in your development environment.
 
 ---
 
@@ -18,7 +18,7 @@ Complete guide for installing all AgentDock packages in your development environ
 
 ```bash
 # From repository root
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 
 # Install all packages in development mode
 uv pip install -e packages/common-py -e packages/schema
@@ -31,7 +31,7 @@ uv pip install -e "packages/common-py[dev]" -e "packages/schema[dev]"
 
 ```bash
 # From repository root
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 
 # Activate virtual environment first
 source .venv/bin/activate
@@ -52,7 +52,7 @@ pip install -e "packages/common-py[dev]" -e "packages/schema[dev]"
 **Use Case**: Active development, testing changes immediately
 
 ```bash
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 
 # Install common package
 uv pip install -e packages/common-py
@@ -61,10 +61,10 @@ uv pip install -e packages/common-py
 uv pip install -e packages/schema
 
 # Verify installation
-uv pip list | grep agentdock
+uv pip list | grep Dockrion
 # Output:
-# agentdock-common    0.1.1    /path/to/packages/common-py
-# agentdock-schema    0.1.0    /path/to/packages/schema
+# dockrion-common    0.1.1    /path/to/packages/common-py
+# dockrion-schema    0.1.0    /path/to/packages/schema
 ```
 
 **Benefits:**
@@ -74,7 +74,7 @@ uv pip list | grep agentdock
 
 **How it works:**
 - Creates symlinks to source directories
-- `import agentdock_common` points to `packages/common-py/agentdock_common/`
+- `import dockrion_common` points to `packages/common-py/dockrion_common/`
 - Edit files → changes are live immediately
 
 ---
@@ -90,7 +90,7 @@ uv pip install -e "packages/common-py[dev]" -e "packages/schema[dev]"
 # Now you can run tests
 cd packages/schema
 pytest tests/
-pytest tests/ --cov=agentdock_schema --cov-report=term-missing
+pytest tests/ --cov=dockrion_schema --cov-report=term-missing
 ```
 
 **Includes:**
@@ -110,10 +110,10 @@ pytest tests/ --cov=agentdock_schema --cov-report=term-missing
 uv pip install packages/common-py packages/schema
 
 # Verify
-uv pip list | grep agentdock
+uv pip list | grep Dockrion
 # Output:
-# agentdock-common    0.1.1
-# agentdock-schema    0.1.0
+# dockrion-common    0.1.1
+# dockrion-schema    0.1.0
 ```
 
 **When to use:**
@@ -137,7 +137,7 @@ Create a helper script:
 
 set -e  # Exit on error
 
-echo "🚀 Installing all AgentDock packages..."
+echo "🚀 Installing all Dockrion packages..."
 
 # Check if uv is available
 if command -v uv &> /dev/null; then
@@ -147,10 +147,10 @@ else
 fi
 
 # Install in dependency order
-echo "📦 Installing agentdock-common..."
+echo "📦 Installing dockrion-common..."
 $INSTALLER install -e packages/common-py
 
-echo "📦 Installing agentdock-schema..."
+echo "📦 Installing dockrion-schema..."
 $INSTALLER install -e packages/schema
 
 # Install dev dependencies
@@ -160,7 +160,7 @@ $INSTALLER install -e "packages/common-py[dev]" -e "packages/schema[dev]"
 echo "✅ Installation complete!"
 echo ""
 echo "Installed packages:"
-$INSTALLER list | grep agentdock
+$INSTALLER list | grep Dockrion
 ```
 
 **Usage:**
@@ -177,7 +177,7 @@ chmod +x install-all.sh
 
 ```bash
 # From project root
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 
 # Sync all dependencies from uv.lock
 uv sync
@@ -201,7 +201,7 @@ uv sync
 
 ```bash
 # Using uv (recommended)
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 uv venv
 
 # Or using Python's venv
@@ -222,10 +222,10 @@ source .venv/bin/activate
 
 ```bash
 which python
-# Should show: /Users/prakharagarwal/AgentDock/.venv/bin/python
+# Should show: /Users/prakharagarwal/Dockrion/.venv/bin/python
 
 echo $VIRTUAL_ENV
-# Should show: /Users/prakharagarwal/AgentDock/.venv
+# Should show: /Users/prakharagarwal/Dockrion/.venv
 ```
 
 ---
@@ -235,9 +235,9 @@ echo $VIRTUAL_ENV
 Always install in dependency order:
 
 ```
-1. agentdock-common  ← No internal dependencies
+1. dockrion-common  ← No internal dependencies
    ↓
-2. agentdock-schema  ← Depends on common
+2. dockrion-schema  ← Depends on common
    ↓
 3. Other packages    ← May depend on common and/or schema
 ```
@@ -257,7 +257,7 @@ uv pip install -e packages/common-py    # Installing after won't fix it
 If you installed in wrong order:
 ```bash
 # Uninstall and reinstall in correct order
-uv pip uninstall agentdock-schema agentdock-common
+uv pip uninstall dockrion-schema dockrion-common
 uv pip install -e packages/common-py -e packages/schema
 ```
 
@@ -268,12 +268,12 @@ uv pip install -e packages/common-py -e packages/schema
 ### Check Installed Packages
 
 ```bash
-# List all agentdock packages
-uv pip list | grep agentdock
+# List all Dockrion packages
+uv pip list | grep Dockrion
 
 # Expected output:
-# agentdock-common    0.1.1    /path/to/packages/common-py
-# agentdock-schema    0.1.0    /path/to/packages/schema
+# dockrion-common    0.1.1    /path/to/packages/common-py
+# dockrion-schema    0.1.0    /path/to/packages/schema
 ```
 
 ### Test Imports
@@ -282,11 +282,11 @@ uv pip list | grep agentdock
 # Test in Python REPL
 python
 
->>> from agentdock_common import ValidationError, SUPPORTED_FRAMEWORKS
+>>> from dockrion_common import ValidationError, SUPPORTED_FRAMEWORKS
 >>> print(SUPPORTED_FRAMEWORKS)
 ['langgraph', 'langchain']
 
->>> from agentdock_schema import DockSpec
+>>> from dockrion_schema import DockSpec
 >>> print(DockSpec.__name__)
 'DockSpec'
 
@@ -302,19 +302,19 @@ uv run pytest tests/ -v
 
 # Test schema package
 cd packages/schema
-uv run pytest tests/ -v --cov=agentdock_schema
+uv run pytest tests/ -v --cov=dockrion_schema
 ```
 
 ---
 
 ## Troubleshooting
 
-### Problem: "No module named 'agentdock_common'"
+### Problem: "No module named 'dockrion_common'"
 
 **Solution:**
 ```bash
 # 1. Verify installation
-uv pip list | grep agentdock-common
+uv pip list | grep dockrion-common
 
 # 2. If not installed, install it
 uv pip install -e packages/common-py
@@ -324,7 +324,7 @@ which python
 # Should be in .venv
 ```
 
-### Problem: "Could not find a version that satisfies the requirement agentdock-common>=0.1.1"
+### Problem: "Could not find a version that satisfies the requirement dockrion-common>=0.1.1"
 
 **Cause:** Schema trying to install common from PyPI (not published yet)
 
@@ -340,11 +340,11 @@ uv pip install -e packages/schema
 
 **Solution:** Reinstall with `-e` flag:
 ```bash
-uv pip uninstall agentdock-schema
+uv pip uninstall dockrion-schema
 uv pip install -e packages/schema
 ```
 
-### Problem: "AttributeError: module 'agentdock_common' has no attribute 'X'"
+### Problem: "AttributeError: module 'dockrion_common' has no attribute 'X'"
 
 **Cause:** Outdated installation or import cache
 
@@ -385,8 +385,8 @@ uv pip install -e packages/common-py -e "packages/schema[dev]"
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/paritosh0707/AgentDock.git
-cd AgentDock
+git clone https://github.com/paritosh0707/Dockrion.git
+cd Dockrion
 
 # 2. Create virtual environment
 uv venv
@@ -398,7 +398,7 @@ source .venv/bin/activate
 uv pip install -e packages/common-py -e "packages/schema[dev]"
 
 # 5. Verify
-uv pip list | grep agentdock
+uv pip list | grep Dockrion
 
 # 6. Run tests
 cd packages/schema
@@ -409,7 +409,7 @@ pytest tests/
 
 ```bash
 # Edit code
-vim packages/schema/agentdock_schema/dockfile_v1.py
+vim packages/schema/dockrion_schema/dockfile_v1.py
 
 # Test immediately (no reinstall needed with -e)
 cd packages/schema
@@ -420,14 +420,14 @@ pytest tests/test_models.py -v
 
 ### Adding New Packages
 
-When creating new packages (e.g., `agentdock-cli`):
+When creating new packages (e.g., `dockrion-cli`):
 
 ```bash
 # 1. Add dependency in pyproject.toml
 # packages/cli/pyproject.toml
 dependencies = [
-    "agentdock-common>=0.1.1,<0.2.0",
-    "agentdock-schema>=0.1.0,<0.2.0",
+    "dockrion-common>=0.1.1,<0.2.0",
+    "dockrion-schema>=0.1.0,<0.2.0",
 ]
 
 # 2. Install in order
@@ -468,7 +468,7 @@ jobs:
         run: |
           source .venv/bin/activate
           cd packages/schema
-          pytest tests/ --cov=agentdock_schema --cov-report=xml
+          pytest tests/ --cov=dockrion_schema --cov-report=xml
 ```
 
 ---
@@ -479,9 +479,9 @@ When packages are published to PyPI:
 
 ```bash
 # Regular users will install from PyPI
-pip install agentdock-schema
+pip install dockrion-schema
 
-# This automatically installs agentdock-common as dependency
+# This automatically installs dockrion-common as dependency
 # No need to clone repository
 ```
 
@@ -495,8 +495,8 @@ cd ../schema
 python -m build
 
 # Install wheels
-pip install packages/common-py/dist/agentdock_common-0.1.1-py3-none-any.whl
-pip install packages/schema/dist/agentdock_schema-0.1.0-py3-none-any.whl
+pip install packages/common-py/dist/dockrion_common-0.1.1-py3-none-any.whl
+pip install packages/schema/dist/dockrion_schema-0.1.0-py3-none-any.whl
 ```
 
 ---
@@ -507,10 +507,10 @@ pip install packages/schema/dist/agentdock_schema-0.1.0-py3-none-any.whl
 |------|---------|
 | Install all (dev) | `uv pip install -e packages/common-py -e "packages/schema[dev]"` |
 | Install all (prod) | `uv pip install -e packages/common-py -e packages/schema` |
-| Verify installation | `uv pip list \| grep agentdock` |
+| Verify installation | `uv pip list \| grep Dockrion` |
 | Run tests | `cd packages/schema && pytest tests/` |
 | Update dependencies | `cd packages/schema && uv sync` |
-| Uninstall all | `uv pip uninstall agentdock-schema agentdock-common` |
+| Uninstall all | `uv pip uninstall dockrion-schema dockrion-common` |
 | Check conflicts | `uv pip check` |
 | List dependencies | `uv pip list --tree` |
 
@@ -532,7 +532,7 @@ pip install packages/schema/dist/agentdock_schema-0.1.0-py3-none-any.whl
 
 **For Development (Most Common):**
 ```bash
-cd /Users/prakharagarwal/AgentDock
+cd /Users/prakharagarwal/Dockrion
 source .venv/bin/activate
 uv pip install -e packages/common-py -e "packages/schema[dev]"
 ```
@@ -540,12 +540,12 @@ uv pip install -e packages/common-py -e "packages/schema[dev]"
 **For Testing:**
 ```bash
 cd packages/schema
-pytest tests/ --cov=agentdock_schema
+pytest tests/ --cov=dockrion_schema
 ```
 
 **For Production (Future):**
 ```bash
-pip install agentdock-schema  # Will auto-install common
+pip install dockrion-schema  # Will auto-install common
 ```
 
 ---

@@ -1,6 +1,6 @@
 """Tests for info commands (version, doctor)."""
 from typer.testing import CliRunner
-from agentdock_cli.main import app
+from dockrion_cli.main import app
 
 runner = CliRunner()
 

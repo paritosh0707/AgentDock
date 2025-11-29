@@ -1,7 +1,7 @@
 """Tests for validate.py module."""
 import pytest
-from agentdock_sdk.validate import validate_dockspec, validate
-from agentdock_common.errors import ValidationError
+from dockrion_sdk.validate import validate_dockspec, validate
+from dockrion_common.errors import ValidationError
 
 
 class TestValidateDockspec:

@@ -4,21 +4,21 @@ requires-python = ">=3.12"
 
 [manifest]
 members = [
-    "agentdock-adapters",
-    "agentdock-cli",
-    "agentdock-common",
-    "agentdock-policy",
-    "agentdock-schema",
-    "agentdock-sdk",
-    "agentdock-telemetry",
+    "dockrion-adapters",
+    "dockrion-cli",
+    "dockrion-common",
+    "dockrion-policy",
+    "dockrion-schema",
+    "dockrion-sdk",
+    "dockrion-telemetry",
 ]
 
 [[package]]
-name = "agentdock-adapters"
+name = "dockrion-adapters"
 version = "0.1.0"
 source = { editable = "packages/adapters" }
 dependencies = [
-    { name = "agentdock-common" },
+    { name = "dockrion-common" },
 ]
 
 [package.optional-dependencies]
@@ -46,7 +46,7 @@ langgraph = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentdock-common", editable = "packages/common-py" },
+    { name = "dockrion-common", editable = "packages/common-py" },
     { name = "black", marker = "extra == 'dev'", specifier = ">=23.0" },
     { name = "langchain", marker = "extra == 'all'", specifier = ">=0.1.0" },
     { name = "langchain", marker = "extra == 'langchain'", specifier = ">=0.1.0" },
@@ -64,22 +64,35 @@ requires-dist = [
 provides-extras = ["langgraph", "langchain", "all", "dev"]
 
 [[package]]
-name = "agentdock-cli"
+name = "dockrion-cli"
 version = "0.1.0"
 source = { editable = "packages/cli" }
 dependencies = [
-    { name = "agentdock-sdk" },
+    { name = "dockrion-sdk" },
+    { name = "rich" },
     { name = "typer" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "agentdock-sdk", editable = "packages/sdk-python" },
-    { name = "typer", specifier = ">=0.12" },
+    { name = "dockrion-sdk", editable = "packages/sdk-python" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.11.0" },
+    { name = "rich", specifier = ">=13.7.0" },
+    { name = "typer", specifier = ">=0.12.0" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
-name = "agentdock-common"
+name = "dockrion-common"
 version = "0.1.1"
 source = { editable = "packages/common-py" }
 dependencies = [
@@ -90,16 +103,16 @@ dependencies = [
 requires-dist = [{ name = "pydantic", specifier = ">=2.5" }]
 
 [[package]]
-name = "agentdock-policy"
+name = "dockrion-policy"
 version = "0.1.0"
 source = { editable = "packages/policy-engine" }
 
 [[package]]
-name = "agentdock-schema"
+name = "dockrion-schema"
 version = "0.1.0"
 source = { editable = "packages/schema" }
 dependencies = [
-    { name = "agentdock-common" },
+    { name = "dockrion-common" },
     { name = "pydantic" },
 ]
 
@@ -112,7 +125,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentdock-common", editable = "packages/common-py" },
+    { name = "dockrion-common", editable = "packages/common-py" },
     { name = "pydantic", specifier = ">=2.5" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },
@@ -121,13 +134,13 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [[package]]
-name = "agentdock-sdk"
+name = "dockrion-sdk"
 version = "0.1.0"
 source = { editable = "packages/sdk-python" }
 dependencies = [
-    { name = "agentdock-adapters" },
-    { name = "agentdock-common" },
-    { name = "agentdock-schema" },
+    { name = "dockrion-adapters" },
+    { name = "dockrion-common" },
+    { name = "dockrion-schema" },
     { name = "jinja2" },
     { name = "pyyaml" },
     { name = "requests" },
@@ -142,9 +155,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentdock-adapters", editable = "packages/adapters" },
-    { name = "agentdock-common", editable = "packages/common-py" },
-    { name = "agentdock-schema", editable = "packages/schema" },
+    { name = "dockrion-adapters", editable = "packages/adapters" },
+    { name = "dockrion-common", editable = "packages/common-py" },
+    { name = "dockrion-schema", editable = "packages/schema" },
     { name = "jinja2", specifier = ">=3.1.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
@@ -155,7 +168,7 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [[package]]
-name = "agentdock-telemetry"
+name = "dockrion-telemetry"
 version = "0.1.0"
 source = { editable = "packages/telemetry" }
 dependencies = [

@@ -1,2 +1,2 @@
-"""Tests for agentdock-adapters package"""
+"""Tests for dockrion-adapters package"""
 

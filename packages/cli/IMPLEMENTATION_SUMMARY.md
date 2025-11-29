@@ -14,7 +14,7 @@
 
 ```
 packages/cli/
-├── agentdock_cli/
+├── dockrion_cli/
 │   ├── __init__.py
 │   ├── main.py              ✅ Entry point with all commands
 │   ├── utils.py             ✅ Console helpers and formatting
@@ -43,7 +43,7 @@ packages/cli/
 
 ### 1. Core Commands (8 total)
 
-#### `agentdock validate`
+#### `Dockrion validate`
 - ✅ File existence checking
 - ✅ YAML syntax validation
 - ✅ Schema validation with detailed errors
@@ -51,7 +51,7 @@ packages/cli/
 - ✅ Verbose mode with full spec display
 - ✅ Quiet mode for CI/CD
 
-#### `agentdock test`
+#### `Dockrion test`
 - ✅ Local agent invocation without server
 - ✅ Inline JSON payload support
 - ✅ JSON file payload support
@@ -59,40 +59,40 @@ packages/cli/
 - ✅ Pretty-printed JSON output
 - ✅ Error handling with helpful messages
 
-#### `agentdock build`
+#### `Dockrion build`
 - ✅ Docker image building
 - ✅ Docker availability checking
 - ✅ Progress indicators
 - ✅ Next steps guidance
 - ✅ Error handling for Docker issues
 
-#### `agentdock run`
+#### `Dockrion run`
 - ✅ Local development server
 - ✅ Graceful shutdown (Ctrl+C)
 - ✅ Port/host configuration from Dockfile
 - ✅ Available endpoints display
 - ✅ Process management
 
-#### `agentdock logs`
+#### `Dockrion logs`
 - ✅ Local log retrieval
 - ✅ Follow mode support
 - ✅ Line limit control
 - ✅ Real-time log streaming
 
-#### `agentdock init`
+#### `Dockrion init`
 - ✅ Dockfile template generation
 - ✅ Custom output path
 - ✅ Overwrite protection with confirmation
 - ✅ Force flag support
 - ✅ Next steps guidance
 
-#### `agentdock version`
+#### `Dockrion version`
 - ✅ CLI version display
 - ✅ SDK version display
 - ✅ Python version display
 - ✅ Formatted table output
 
-#### `agentdock doctor`
+#### `Dockrion doctor`
 - ✅ Python version checking
 - ✅ Docker installation checking
 - ✅ Dockfile presence checking
@@ -149,12 +149,12 @@ packages/cli/
 **Direct:**
 - `typer>=0.12.0` - CLI framework
 - `rich>=13.7.0` - Terminal formatting
-- `agentdock-sdk>=0.1.0` - Core functionality
+- `dockrion-sdk>=0.1.0` - Core functionality
 
 **Indirect (via SDK):**
-- `agentdock-schema` - Dockfile validation
-- `agentdock-common` - Error classes
-- `agentdock-adapters` - Agent execution
+- `dockrion-schema` - Dockfile validation
+- `dockrion-common` - Error classes
+- `dockrion-adapters` - Agent execution
 
 ### Integration Points
 
@@ -202,24 +202,24 @@ All planned features delivered:
 
 ```bash
 # Initialize project
-$ agentdock init my-agent
+$ Dockrion init my-agent
 ✅ Created Dockfile.yaml
 
 # Validate configuration
-$ agentdock validate
+$ Dockrion validate
 ✅ Dockfile is valid. Agent: my-agent, Framework: langgraph
 
 # Test locally
-$ agentdock test --payload '{"text": "test"}'
+$ Dockrion test --payload '{"text": "test"}'
 ✅ Agent invocation successful
 
 # Run development server
-$ agentdock run
+$ Dockrion run
 ✅ Server started at http://0.0.0.0:8080
 
 # Build for production
-$ agentdock build
-✅ Successfully built image: agentdock/my-agent:dev
+$ Dockrion build
+✅ Successfully built image: Dockrion/my-agent:dev
 ```
 
 ### CI/CD Integration
@@ -228,8 +228,8 @@ $ agentdock build
 # .gitlab-ci.yml
 validate:
   script:
-    - agentdock validate --quiet
-    - agentdock test --payload-file test.json
+    - Dockrion validate --quiet
+    - Dockrion test --payload-file test.json
 ```
 
 ---
@@ -261,7 +261,7 @@ cd packages/cli
 uv run pytest tests/ -v
 
 # Run with coverage
-uv run pytest tests/ --cov=agentdock_cli
+uv run pytest tests/ --cov=dockrion_cli
 ```
 
 ---
@@ -302,10 +302,10 @@ Validation Errors
 ### Progress Indicators
 
 ```bash
-$ agentdock build
+$ Dockrion build
 ℹ️ Building Docker image for agent: invoice-copilot
 ⠋ Building Docker image...
-✅ Successfully built image: agentdock/invoice-copilot:dev
+✅ Successfully built image: Dockrion/invoice-copilot:dev
 ```
 
 ---
@@ -387,12 +387,12 @@ uv sync --extra dev
 
 ```bash
 # Check installation
-agentdock version
-agentdock doctor
+Dockrion version
+Dockrion doctor
 
 # Test with invoice_copilot
-agentdock validate ../../Dockfile.yaml
-agentdock test ../../Dockfile.yaml --payload '{"document_text": "test"}'
+Dockrion validate ../../Dockfile.yaml
+Dockrion test ../../Dockfile.yaml --payload '{"document_text": "test"}'
 ```
 
 ### 3. Run Tests
@@ -443,7 +443,7 @@ uv run pytest tests/ -v
 
 ### Adding New Commands
 
-1. Create `my_cmd.py` in `agentdock_cli/`
+1. Create `my_cmd.py` in `dockrion_cli/`
 2. Use `@app.command()` decorator
 3. Add to `main.py` imports and registration
 4. Create tests in `tests/test_my_cmd.py`
@@ -453,7 +453,7 @@ uv run pytest tests/ -v
 
 ```python
 from typer.testing import CliRunner
-from agentdock_cli.main import app
+from dockrion_cli.main import app
 
 runner = CliRunner()
 result = runner.invoke(app, ["mycommand", "--option"])
@@ -474,7 +474,7 @@ console.print("[bold cyan]Formatted text[/bold cyan]")
 
 ## ✨ Conclusion
 
-The CLI package is **production-ready** and provides an excellent developer experience for working with AgentDock agents. It wraps SDK functionality with beautiful terminal output, comprehensive error handling, and helpful guidance.
+The CLI package is **production-ready** and provides an excellent developer experience for working with Dockrion agents. It wraps SDK functionality with beautiful terminal output, comprehensive error handling, and helpful guidance.
 
 **Ready for:**
 - ✅ Local development workflows

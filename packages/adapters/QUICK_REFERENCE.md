@@ -1,9 +1,9 @@
-# AgentDock Adapters - Quick Reference
+# Dockrion Adapters - Quick Reference
 
 ## 🚀 30-Second Start
 
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 adapter = get_adapter("langgraph")
 adapter.load("app.graph:build_graph")
@@ -46,7 +46,7 @@ result = adapter.invoke({"input": "test"})
 
 ### Get Adapter
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 adapter = get_adapter("langgraph")  # or "langchain" (Phase 2)
 ```
@@ -91,7 +91,7 @@ if adapter.health_check():
 ### Common Errors
 
 ```python
-from agentdock_adapters import (
+from dockrion_adapters import (
     AdapterLoadError,        # Loading failed
     AdapterNotLoadedError,   # Invoke before load
     AgentExecutionError,     # Agent crashed
@@ -126,7 +126,7 @@ AdapterError
 ## 🏭 Registry Functions
 
 ```python
-from agentdock_adapters import (
+from dockrion_adapters import (
     get_adapter,              # Get adapter instance
     register_adapter,         # Register custom adapter
     list_supported_frameworks, # List all frameworks
@@ -167,7 +167,7 @@ uv run pytest tests/ -v
 uv run pytest tests/test_langgraph_adapter.py -v
 
 # Run with coverage
-uv run pytest tests/ --cov=agentdock_adapters --cov-report=term-missing
+uv run pytest tests/ --cov=dockrion_adapters --cov-report=term-missing
 
 # Run single test
 uv run pytest tests/test_langgraph_adapter.py::TestLoading::test_load_simple_agent -v
@@ -213,7 +213,7 @@ result = adapter.invoke(
 
 ```
 packages/adapters/
-├── agentdock_adapters/      # Source code
+├── dockrion_adapters/      # Source code
 │   ├── __init__.py          # Public API
 │   ├── base.py              # Protocols
 │   ├── errors.py            # Errors

@@ -1,14 +1,14 @@
 """
-Basic tests for agentdock-common package
+Basic tests for dockrion-common package
 
 This file contains smoke tests to verify the package implementation works.
 More comprehensive tests should be added as the package is used.
 """
 
 import pytest
-from agentdock_common import (
+from dockrion_common import (
     # Errors
-    AgentDockError,
+    DockrionError,
     ValidationError,
     AuthError,
     # Constants
@@ -148,8 +148,8 @@ class TestHTTPModels:
         assert response["success"] is True
         assert response["data"]["id"] == "123"
     
-    def test_error_response_agentdock_error(self):
-        """Test error response with AgentDockError"""
+    def test_error_response_dockrion_error(self):
+        """Test error response with DockrionError"""
         error = ValidationError("Invalid input")
         response = error_response(error)
         assert response["success"] is False
@@ -167,7 +167,7 @@ class TestHTTPModels:
 
 def test_package_imports():
     """Test that all expected exports are available"""
-    from agentdock_common import __version__, __all__
+    from dockrion_common import __version__, __all__
     
     assert __version__ == "0.1.0"
     assert isinstance(__all__, list)

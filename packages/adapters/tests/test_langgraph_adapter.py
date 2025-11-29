@@ -10,8 +10,8 @@ Comprehensive test coverage for:
 """
 
 import pytest
-from agentdock_adapters import LangGraphAdapter
-from agentdock_adapters.errors import (
+from dockrion_adapters import LangGraphAdapter
+from dockrion_adapters.errors import (
     AdapterLoadError,
     ModuleNotFoundError,
     CallableNotFoundError,

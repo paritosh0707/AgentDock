@@ -1,4 +1,4 @@
-# AgentDock Package Responsibilities & Boundaries
+# Dockrion Package Responsibilities & Boundaries
 
 **Version:** 1.0  
 **Last Updated:** November 11, 2024  
@@ -6,7 +6,7 @@
 
 ## Purpose
 
-This document defines the clear separation of responsibilities for each AgentDock package to prevent overlap, ensure maintainability, and guide future development decisions.
+This document defines the clear separation of responsibilities for each Dockrion package to prevent overlap, ensure maintainability, and guide future development decisions.
 
 ---
 
@@ -53,7 +53,7 @@ This document defines the clear separation of responsibilities for each AgentDoc
 Legend:
 - Top layer depends on bottom layers
 - Bottom layers NEVER depend on top layers
-- Common and Telemetry are foundation (no dependencies on other AgentDock packages)
+- Common and Telemetry are foundation (no dependencies on other Dockrion packages)
 ```
 
 ---
@@ -61,10 +61,10 @@ Legend:
 ## 1. Common Package (`packages/common-py`)
 
 ### Primary Responsibility
-**Shared utilities and primitives used across all AgentDock packages and services**
+**Shared utilities and primitives used across all Dockrion packages and services**
 
 ### Owns
-- ✅ **Error Classes**: All AgentDock exceptions (`AgentDockError`, `ValidationError`, `AuthError`, etc.)
+- ✅ **Error Classes**: All Dockrion exceptions (`DockrionError`, `ValidationError`, `AuthError`, etc.)
 - ✅ **Constants**: Supported values, defaults, permissions list
 - ✅ **Validation Utilities**: Input validation, format checking, parsing
 - ✅ **Auth Utilities**: API key generation, validation, hashing
@@ -84,11 +84,11 @@ Legend:
 ### Examples
 ```python
 # ✅ BELONGS in common
-from agentdock_common.errors import ValidationError
-from agentdock_common.constants import SUPPORTED_FRAMEWORKS
-from agentdock_common.validation import validate_entrypoint
-from agentdock_common.auth_utils import generate_api_key
-from agentdock_common.http_models import success_response
+from dockrion_common.errors import ValidationError
+from dockrion_common.constants import SUPPORTED_FRAMEWORKS
+from dockrion_common.validation import validate_entrypoint
+from dockrion_common.auth_utils import generate_api_key
+from dockrion_common.http_models import success_response
 
 # ❌ DOES NOT belong in common
 DockSpec  # This is schema
@@ -280,8 +280,8 @@ def log_violation():  # This is telemetry
 def log_event(event: str, **kwargs):
     sys.stdout.write(json.dumps({"event": event, **kwargs}))
 
-REQ_COUNT = Counter("agentdock_requests_total", "Total requests", ["agent","version"])
-LATENCY = Histogram("agentdock_latency_seconds", "Latency", ["agent","version"])
+REQ_COUNT = Counter("dockrion_requests_total", "Total requests", ["agent","version"])
+LATENCY = Histogram("dockrion_latency_seconds", "Latency", ["agent","version"])
 
 def observe_request(agent: str, version: str, latency_s: float):
     REQ_COUNT.labels(agent, version).inc()
@@ -289,7 +289,7 @@ def observe_request(agent: str, version: str, latency_s: float):
 
 # ❌ DOES NOT belong in telemetry
 def invoke_agent():  # This is adapters
-class AgentDockLogger:  # This would be common (if needed)
+class DockrionLogger:  # This would be common (if needed)
 ```
 
 ### Future Considerations (V2+)
@@ -400,15 +400,15 @@ def _render_runtime():  # This is SDK
 ```python
 # ✅ ALLOWED
 # SDK imports from schema, common
-from agentdock_schema.dockfile_v1 import DockSpec
-from agentdock_common.errors import ValidationError
+from dockrion_schema.dockfile_v1 import DockSpec
+from dockrion_common.errors import ValidationError
 
 # ❌ FORBIDDEN
 # Common importing from schema
-from agentdock_schema.dockfile_v1 import DockSpec  # NO!
+from dockrion_schema.dockfile_v1 import DockSpec  # NO!
 
 # Schema importing from SDK
-from agentdock_sdk.client import load_dockspec  # NO!
+from dockrion_sdk.client import load_dockspec  # NO!
 ```
 
 ### Rule 2: Common is Foundation
@@ -416,10 +416,10 @@ from agentdock_sdk.client import load_dockspec  # NO!
 
 ```python
 # ✅ Everyone can import from common
-from agentdock_common.errors import ValidationError
+from dockrion_common.errors import ValidationError
 
 # ❌ Common cannot import from anyone
-from agentdock_schema import DockSpec  # NO!
+from dockrion_schema import DockSpec  # NO!
 ```
 
 ### Rule 3: Avoid Circular Dependencies
@@ -529,10 +529,10 @@ def deploy_agent():      # This is SDK!
 ```python
 # ❌ BAD
 # schema imports from adapters
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 # adapters imports from schema
-from agentdock_schema import DockSpec
+from dockrion_schema import DockSpec
 ```
 
 **Solution:** Extract shared types to `common` or restructure
@@ -542,10 +542,10 @@ from agentdock_schema import DockSpec
 
 ```python
 # ❌ BAD
-from agentdock_adapters.langgraph_adapter import _private_method
+from dockrion_adapters.langgraph_adapter import _private_method
 
 # ✅ GOOD
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 adapter = get_adapter("langgraph")
 ```
 

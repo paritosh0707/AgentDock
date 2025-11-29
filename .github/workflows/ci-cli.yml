@@ -8,4 +8,4 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install -e packages/schema -e packages/sdk-python -e packages/cli
-      - run: python -m agentdock_cli.main validate-cmd || python -m agentdock_cli.main --help
+      - run: python -m dockrion_cli.main validate-cmd || python -m dockrion_cli.main --help

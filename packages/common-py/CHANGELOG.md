@@ -1,6 +1,6 @@
-# Changelog - agentdock-common
+# Changelog - dockrion-common
 
-All notable changes to the `agentdock-common` package will be documented in this file.
+All notable changes to the `dockrion-common` package will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -41,9 +41,9 @@ This change maintains 100% backward compatibility while following Pydantic V2 be
 ## [0.1.0] - 2024-11-10
 
 ### Added
-- Initial implementation of `agentdock-common` package
+- Initial implementation of `dockrion-common` package
 - **Error Classes** (`errors.py`):
-  - `AgentDockError` - Base exception class with `code` and `message` attributes
+  - `DockrionError` - Base exception class with `code` and `message` attributes
   - `ValidationError` - For input validation failures (code: `VALIDATION_ERROR`)
   - `AuthError` - For authentication/authorization failures (code: `AUTH_ERROR`)
   - `RateLimitError` - For rate limit violations (code: `RATE_LIMIT_EXCEEDED`)
@@ -55,7 +55,7 @@ This change maintains 100% backward compatibility while following Pydantic V2 be
   - All errors include `to_dict()` method for API serialization
 
 - **Constants** (`constants.py`):
-  - Version information: `AGENTDOCK_VERSION`, `SUPPORTED_DOCKFILE_VERSIONS`, `API_VERSION`
+  - Version information: `dockrion_VERSION`, `SUPPORTED_DOCKFILE_VERSIONS`, `API_VERSION`
   - Supported values:
     - `SUPPORTED_FRAMEWORKS` - Agent frameworks (langgraph, langchain)
     - `SUPPORTED_PROVIDERS` - LLM providers (openai, azure, anthropic, google, ollama, custom)
@@ -108,19 +108,19 @@ This change maintains 100% backward compatibility while following Pydantic V2 be
 
 ### Dependencies
 - `pydantic >= 2.0` - For data validation and HTTP models
-- No internal AgentDock dependencies (foundation package)
+- No internal Dockrion dependencies (foundation package)
 
 ### Design Principles
 - **Single Source of Truth**: All shared constants and utilities in one place
 - **Minimal Dependencies**: Only external dependencies, no internal package dependencies
-- **Reusable**: Used by all AgentDock packages (schema, adapters, policy-engine, etc.)
+- **Reusable**: Used by all Dockrion packages (schema, adapters, policy-engine, etc.)
 - **Consistent Error Handling**: Unified error hierarchy for all services
 - **Security-First**: Built-in validation and injection prevention
 
 ### Notes
-- This package serves as the foundation for all other AgentDock packages
+- This package serves as the foundation for all other Dockrion packages
 - Constants in this package are the canonical source for supported values
-- Error classes in this package should be used by all AgentDock services
+- Error classes in this package should be used by all Dockrion services
 - No breaking changes should be introduced without major version bump
 
 ## [Unreleased]

@@ -1,2 +1,2 @@
-"""Tests for agentdock-schema package"""
+"""Tests for dockrion-schema package"""
 

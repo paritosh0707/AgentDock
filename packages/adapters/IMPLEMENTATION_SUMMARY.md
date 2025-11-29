@@ -1,8 +1,8 @@
-# AgentDock Adapters - Implementation Summary
+# Dockrion Adapters - Implementation Summary
 
 ## 📋 Overview
 
-The **AgentDock Adapters** package has been successfully implemented! This package provides a uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling the AgentDock runtime to invoke any agent type through a consistent API.
+The **Dockrion Adapters** package has been successfully implemented! This package provides a uniform interface to different agent frameworks (LangGraph, LangChain, etc.), enabling the Dockrion runtime to invoke any agent type through a consistent API.
 
 **Status:** ✅ MVP Complete  
 **Test Coverage:** 45/45 tests passing (100%)  
@@ -27,10 +27,10 @@ The **AgentDock Adapters** package has been successfully implemented! This packa
 **Design Decision:** Used Protocol (PEP 544) instead of ABC for maximum flexibility - no forced inheritance required.
 
 ### 2. Error Hierarchy (`errors.py`)
-Comprehensive error classes that inherit from `AgentDockError`:
+Comprehensive error classes that inherit from `DockrionError`:
 
 ```
-AgentDockError (from common)
+DockrionError (from common)
 └── AdapterError
     ├── AdapterLoadError
     │   ├── ModuleNotFoundError
@@ -54,7 +54,7 @@ Production-ready adapter for LangGraph compiled graphs.
 **Features:**
 - ✅ Dynamic module loading with validation
 - ✅ Comprehensive error handling with helpful messages
-- ✅ Structured logging using agentdock_common logger
+- ✅ Structured logging using dockrion_common logger
 - ✅ Automatic capability detection (streaming, async)
 - ✅ Health check functionality
 - ✅ Metadata extraction
@@ -148,7 +148,7 @@ Clean, well-organized public API exposing:
 
 ### 7. Configuration (`pyproject.toml`)
 Properly configured with:
-- Dependencies: `agentdock-common>=0.1.0`
+- Dependencies: `dockrion-common>=0.1.0`
 - Optional extras: `langgraph`, `langchain`, `all`, `dev`
 - Testing config (pytest, coverage)
 - Linting config (ruff, mypy)
@@ -257,19 +257,19 @@ tests/test_registry.py::TestRegistryIntegration::test_full_custom_adapter_workfl
 | Adapter State | Stateful (stores loaded agent) | Better performance, simpler API |
 | Error Handling | Custom hierarchy | Consistent with common package, helpful messages |
 | Input/Output | Dict only | Flexible schema via Dockfile, JSON-serializable |
-| Logging | Structured JSON | Consistent with agentdock_common |
+| Logging | Structured JSON | Consistent with dockrion_common |
 
 ### Integration with Other Packages
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                    AgentDock Runtime                     │
+│                    Dockrion Runtime                     │
 │                  (Future - Not Built Yet)                │
 └─────────────────────────────────────────────────────────┘
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  agentdock-adapters                      │
+│                  dockrion-adapters                      │
 │  ┌──────────────┐  ┌───────────────┐  ┌──────────────┐ │
 │  │  Protocol    │  │   Registry    │  │   Errors     │ │
 │  │ AgentAdapter │  │ get_adapter() │  │AdapterError  │ │
@@ -282,7 +282,7 @@ tests/test_registry.py::TestRegistryIntegration::test_full_custom_adapter_workfl
                             │
                             ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  agentdock-common                        │
+│                  dockrion-common                        │
 │         (Errors, Logging, Validation, Constants)        │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -293,7 +293,7 @@ tests/test_registry.py::TestRegistryIntegration::test_full_custom_adapter_workfl
 
 ```
 packages/adapters/
-├── agentdock_adapters/
+├── dockrion_adapters/
 │   ├── __init__.py           # Public API (15 exports)
 │   ├── base.py               # AgentAdapter protocol (4 protocols)
 │   ├── errors.py             # Error hierarchy (9 error classes)
@@ -321,7 +321,7 @@ packages/adapters/
 ### Basic Usage
 
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 # Get adapter for LangGraph
 adapter = get_adapter("langgraph")
@@ -341,7 +341,7 @@ print(result)
 ### With Error Handling
 
 ```python
-from agentdock_adapters import (
+from dockrion_adapters import (
     get_adapter,
     AdapterLoadError,
     AgentExecutionError,
@@ -365,7 +365,7 @@ except AgentExecutionError as e:
 ### Custom Adapter Registration
 
 ```python
-from agentdock_adapters import register_adapter, get_adapter
+from dockrion_adapters import register_adapter, get_adapter
 
 class MyFrameworkAdapter:
     def load(self, entrypoint): ...
@@ -398,7 +398,7 @@ uv sync --extra dev
 uv run pytest tests/ -v
 
 # Run with coverage
-uv run pytest tests/ -v --cov=agentdock_adapters --cov-report=term-missing
+uv run pytest tests/ -v --cov=dockrion_adapters --cov-report=term-missing
 ```
 
 ---
@@ -467,7 +467,7 @@ uv run pytest tests/ -v --cov=agentdock_adapters --cov-report=term-missing
 ## 🤝 Integration Points
 
 ### With Common Package
-- ✅ Uses `AgentDockError` base class
+- ✅ Uses `DockrionError` base class
 - ✅ Uses `validate_entrypoint()` function
 - ✅ Uses `get_logger()` for structured logging
 - ✅ Uses `ValidationError` for framework validation
@@ -550,7 +550,7 @@ uv run python examples/standalone_demo.py
 ```
 
 ### Adding a New Adapter
-1. Create new file: `agentdock_adapters/myframework_adapter.py`
+1. Create new file: `dockrion_adapters/myframework_adapter.py`
 2. Implement `AgentAdapter` protocol
 3. Add to registry in `registry.py`
 4. Write tests in `tests/test_myframework_adapter.py`
@@ -572,7 +572,7 @@ uv run python examples/standalone_demo.py
 
 ## ✨ Conclusion
 
-The **AgentDock Adapters** package is production-ready for the MVP! It provides a clean, extensible interface for invoking LangGraph agents, with comprehensive error handling, testing, and documentation.
+The **Dockrion Adapters** package is production-ready for the MVP! It provides a clean, extensible interface for invoking LangGraph agents, with comprehensive error handling, testing, and documentation.
 
 The architecture is designed for future growth, with clear extension points for:
 - Additional frameworks (LangChain, CrewAI, AutoGen)

@@ -10,7 +10,7 @@ Tests cover:
 """
 
 import pytest
-from agentdock_schema import (
+from dockrion_schema import (
     DockSpec,
     to_dict,
     to_yaml_string,

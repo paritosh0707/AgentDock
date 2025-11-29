@@ -32,7 +32,7 @@ if "DEFINITELY_MISSING_VAR" in os.environ:
 ### 4. Arguments Field Access
 **Problem:** `spec.arguments` is a `Dict[str, Any]`, not an object with attributes like `timeout_sec`.
 
-**Fixed in:** `agentdock_sdk/validate.py`
+**Fixed in:** `dockrion_sdk/validate.py`
 ```python
 # Changed from:
 if spec.arguments.timeout_sec:
@@ -48,7 +48,7 @@ if spec.arguments and isinstance(spec.arguments, dict):
 ### 5. Model Field Optional Check
 **Problem:** Not checking if `spec.model` exists before accessing `temperature`.
 
-**Fixed in:** `agentdock_sdk/validate.py`
+**Fixed in:** `dockrion_sdk/validate.py`
 ```python
 # Added null check:
 if spec.model and spec.model.temperature and spec.model.temperature > 1.0:
@@ -78,7 +78,7 @@ if spec.model and spec.model.temperature and spec.model.temperature > 1.0:
    - Fixed `test_validate_timeout_warning_high`
    - Fixed `test_validate_timeout_warning_low`
 
-5. **packages/sdk-python/agentdock_sdk/validate.py**
+5. **packages/sdk-python/dockrion_sdk/validate.py**
    - Fixed argument field access logic
    - Fixed model null checks
 

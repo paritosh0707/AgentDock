@@ -1,2 +1,2 @@
-"""Tests for AgentDock CLI."""
+"""Tests for dockrion CLI."""
 

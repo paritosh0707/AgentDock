@@ -2,13 +2,13 @@
 import os
 import pytest
 from pathlib import Path
-from agentdock_sdk.client import (
+from dockrion_sdk.client import (
     load_dockspec,
     invoke_local,
     expand_env_vars,
     ControllerClient
 )
-from agentdock_common.errors import ValidationError, AgentDockError
+from dockrion_common.errors import ValidationError, DockrionError
 
 
 class TestLoadDockspec:
@@ -134,7 +134,7 @@ io_schema:
 expose:
   port: 8080
 """)
-        with pytest.raises(AgentDockError):
+        with pytest.raises(DockrionError):
             invoke_local(str(dockfile), {"text": "test"})
 
 

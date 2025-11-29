@@ -1,12 +1,12 @@
 [project]
-name = "agentdock-adapters"
+name = "dockrion-adapters"
 version = "0.1.0"
-description = "Framework abstraction layer for AgentDock - uniform interface to LangGraph, LangChain, and other agent frameworks"
+description = "Framework abstraction layer for Dockrion - uniform interface to LangGraph, LangChain, and other agent frameworks"
 requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "AgentDock Team"}
+    {name = "Dockrion Team"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -16,7 +16,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "agentdock-common>=0.1.0",  # For errors, validation, logging
+    "dockrion-common>=0.1.0",  # For errors, validation, logging
 ]
 
 [project.optional-dependencies]
@@ -64,7 +64,7 @@ addopts = [
 ]
 
 [tool.coverage.run]
-source = ["agentdock_adapters"]
+source = ["dockrion_adapters"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",

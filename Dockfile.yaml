@@ -41,15 +41,15 @@ io_schema:
 arguments:
   timeout_sec: 20
   enable_streaming: true
-policies:
-  tools:
-    allowed: [extract_invoice, summarize_invoice]
-    deny_by_default: true
-  safety:
-    redact_patterns: ["\b\d{16}\b"]
-    max_output_chars: 5000
-    block_prompt_injection: true
-    halt_on_violation: false
+# policies:
+#   tools:
+#     allowed: [extract_invoice, summarize_invoice]
+#     deny_by_default: true
+#   safety:
+#     redact_patterns: ["\b\d{16}\b"]
+#     max_output_chars: 5000
+#     block_prompt_injection: true
+#     halt_on_violation: false
 auth:
   mode: api_key
   api_keys: { enabled: true, rotation_days: 30 }
@@ -64,14 +64,14 @@ auth:
     admin: "1000/m"
     developer: "300/m"
     viewer: "60/m"
-observability:
-  langfuse:
-    project: "invoice-copilot"
-    public_key: "${LANGFUSE_PUBLIC}"
-    secret_key: "${LANGFUSE_SECRET}"
-  tracing: true
-  log_level: info
-  metrics: { latency: true, tokens: true, cost: true }
+# observability:
+#   langfuse:
+#     project: "invoice-copilot"
+#     public_key: "${LANGFUSE_PUBLIC}"
+#     secret_key: "${LANGFUSE_SECRET}"
+#   tracing: true
+#   log_level: info
+#   metrics: { latency: true, tokens: true, cost: true }
 expose:
   rest: true
   streaming: sse

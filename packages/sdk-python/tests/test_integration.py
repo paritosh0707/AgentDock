@@ -8,7 +8,7 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from agentdock_sdk import (
+from dockrion_sdk import (
     load_dockspec,
     invoke_local,
     validate_dockspec,
@@ -16,7 +16,7 @@ from agentdock_sdk import (
     run_local,
     expand_env_vars
 )
-from agentdock_common.errors import ValidationError, AgentDockError
+from dockrion_common.errors import ValidationError, DockrionError
 
 
 class TestEndToEndWorkflow:
@@ -106,7 +106,7 @@ class TestRuntimeGeneration:
     
     def test_runtime_generation_creates_valid_python(self, sample_dockfile, tmp_path):
         """Test that generated runtime is valid Python code."""
-        from agentdock_sdk.deploy import _render_runtime
+        from dockrion_sdk.deploy import _render_runtime
         
         spec = load_dockspec(sample_dockfile)
         runtime_code = _render_runtime(spec)
@@ -122,7 +122,7 @@ class TestRuntimeGeneration:
     
     def test_requirements_generation_includes_framework_deps(self, sample_dockfile):
         """Test that requirements.txt includes framework-specific dependencies."""
-        from agentdock_sdk.deploy import _generate_requirements
+        from dockrion_sdk.deploy import _generate_requirements
         
         spec = load_dockspec(sample_dockfile)
         requirements = _generate_requirements(spec)
@@ -130,8 +130,8 @@ class TestRuntimeGeneration:
         # Check for base dependencies
         assert "fastapi" in requirements
         assert "uvicorn" in requirements
-        assert "agentdock-common" in requirements
-        assert "agentdock-adapters" in requirements
+        assert "dockrion-common" in requirements
+        assert "dockrion-adapters" in requirements
         
         # Check for framework-specific deps (langgraph)
         assert "langgraph" in requirements
@@ -139,7 +139,7 @@ class TestRuntimeGeneration:
     
     def test_requirements_includes_policy_engine_when_policies_defined(self, tmp_path):
         """Test that policy engine is included when policies are defined."""
-        from agentdock_sdk.deploy import _generate_requirements
+        from dockrion_sdk.deploy import _generate_requirements
         
         # Create Dockfile with policies
         dockfile_content = """
@@ -170,7 +170,7 @@ expose:
         spec = load_dockspec(str(dockfile_path))
         requirements = _generate_requirements(spec)
         
-        assert "agentdock-policy" in requirements
+        assert "dockrion-policy" in requirements
 
 
 class TestErrorHandling:
@@ -221,8 +221,8 @@ agent:
         with open(temp_path, 'w') as f:
             yaml.dump(spec.model_dump(), f)
         
-        # Should raise AgentDockError when trying to invoke
-        with pytest.raises(AgentDockError, match="Failed to load agent"):
+        # Should raise DockrionError when trying to invoke
+        with pytest.raises(DockrionError, match="Failed to load agent"):
             invoke_local(str(temp_path), {"text": "test"})
         
         # Cleanup
@@ -341,7 +341,7 @@ class TestDockerIntegration:
         
         monkeypatch.setattr(subprocess, "check_output", mock_check_output)
         
-        with pytest.raises(AgentDockError, match="Docker is not available"):
+        with pytest.raises(DockrionError, match="Docker is not available"):
             deploy(sample_dockfile)
 
 
@@ -350,7 +350,7 @@ class TestLocalServerLifecycle:
     
     def test_run_local_creates_runtime_directory(self, sample_dockfile):
         """Test that run_local creates the runtime directory."""
-        runtime_dir = Path(".agentdock_runtime")
+        runtime_dir = Path(".dockrion_runtime")
         
         # Clean up if exists
         if runtime_dir.exists():
@@ -374,7 +374,7 @@ class TestLocalServerLifecycle:
     
     def test_deploy_creates_runtime_files(self, sample_dockfile, monkeypatch):
         """Test that deploy creates runtime files before building."""
-        runtime_dir = Path(".agentdock_runtime")
+        runtime_dir = Path(".dockrion_runtime")
         
         # Clean up if exists
         if runtime_dir.exists():

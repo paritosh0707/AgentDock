@@ -2,7 +2,7 @@
 
 ## 🎉 Overview
 
-Successfully implemented the **hybrid validation approach** for the AgentDock Adapters package, combining the best of duck typing and strict type validation.
+Successfully implemented the **hybrid validation approach** for the Dockrion Adapters package, combining the best of duck typing and strict type validation.
 
 **Date:** November 14, 2025  
 **Version:** 0.1.0 → 0.2.0 (conceptual)  
@@ -31,7 +31,7 @@ adapter = LangGraphAdapter(strict_validation=True)
 - Works without forcing langgraph as dependency
 
 **Files Modified:**
-- `agentdock_adapters/langgraph_adapter.py`
+- `dockrion_adapters/langgraph_adapter.py`
 
 **New Methods:**
 - `_validate_langgraph_type()` - Performs strict type checking with lazy imports
@@ -49,7 +49,7 @@ adapter = LangGraphAdapter(strict_validation=True)
 - Handles edge cases (bound methods, kwargs, etc.)
 
 **Files Modified:**
-- `agentdock_adapters/langgraph_adapter.py`
+- `dockrion_adapters/langgraph_adapter.py`
 
 **New Methods:**
 - `_validate_invoke_signature()` - Analyzes and validates signature
@@ -88,7 +88,7 @@ result = adapter.invoke(
 - Backward compatible (config is optional)
 
 **Files Modified:**
-- `agentdock_adapters/langgraph_adapter.py`
+- `dockrion_adapters/langgraph_adapter.py`
 
 **Method Updates:**
 - `invoke()` - Now accepts optional `config` parameter
@@ -115,7 +115,7 @@ result = adapter.invoke(
 ```
 
 **Files Modified:**
-- `agentdock_adapters/langgraph_adapter.py`
+- `dockrion_adapters/langgraph_adapter.py`
 
 ---
 
@@ -244,7 +244,7 @@ result = adapter.invoke(
 ### Example 1: Development (Duck Typing)
 
 ```python
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 # No LangGraph dependency required
 adapter = LangGraphAdapter()
@@ -256,7 +256,7 @@ result = adapter.invoke({"input": "test"})
 
 ```python
 import os
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 # Enable strict validation in production
 is_prod = os.getenv("ENV") == "production"
@@ -267,7 +267,7 @@ adapter.load("app.graph:build_graph")
 ### Example 3: Multi-Turn Conversations
 
 ```python
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 adapter = LangGraphAdapter()
 adapter.load("app.graph:build_graph")
@@ -288,7 +288,7 @@ result2 = adapter.invoke(
 ### Example 4: Metadata Introspection
 
 ```python
-from agentdock_adapters import LangGraphAdapter
+from dockrion_adapters import LangGraphAdapter
 
 adapter = LangGraphAdapter()
 adapter.load("app.graph:build_graph")
@@ -330,9 +330,9 @@ print(f"Strict validation: {metadata['strict_validation']}")
 - `tests/fixtures/sample_agents.py` - Mock agents for testing
 
 ### Code
-- `agentdock_adapters/langgraph_adapter.py` - Main implementation
-- `agentdock_adapters/base.py` - Protocol definitions
-- `agentdock_adapters/errors.py` - Error classes
+- `dockrion_adapters/langgraph_adapter.py` - Main implementation
+- `dockrion_adapters/base.py` - Protocol definitions
+- `dockrion_adapters/errors.py` - Error classes
 
 ---
 

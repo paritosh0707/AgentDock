@@ -1,4 +1,4 @@
-# 🎉 AgentDock Adapters - Implementation Complete!
+# 🎉 Dockrion Adapters - Implementation Complete!
 
 ## ✅ Status: MVP COMPLETE
 
@@ -14,7 +14,7 @@
 
 ```
 packages/adapters/
-├── agentdock_adapters/
+├── dockrion_adapters/
 │   ├── __init__.py              ✅ Public API (15 exports)
 │   ├── base.py                  ✅ AgentAdapter protocol (4 protocols)
 │   ├── errors.py                ✅ Error hierarchy (9 error classes)
@@ -173,7 +173,7 @@ TestRegistryIntegration::test_full_custom_adapter_workflow PASSED        [100%]
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              AGENTDOCK ADAPTERS v0.1.0                  │
+│              Dockrion ADAPTERS v0.1.0                  │
 └─────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────┐
@@ -194,8 +194,8 @@ TestRegistryIntegration::test_full_custom_adapter_workflow PASSED        [100%]
                           │ uses
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│                 AGENTDOCK COMMON                        │
-│  • AgentDockError base class                            │
+│                 Dockrion COMMON                        │
+│  • DockrionError base class                            │
 │  • validate_entrypoint() function                       │
 │  • get_logger() for structured logging                  │
 │  • ValidationError for framework checks                 │
@@ -305,7 +305,7 @@ uv run pytest tests/ -v
 
 ### Basic Usage
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 # Get adapter
 adapter = get_adapter("langgraph")
@@ -386,12 +386,12 @@ uv run pytest tests/test_langgraph_adapter.py -v
 uv run pytest tests/test_langgraph_adapter.py::TestLoading::test_load_simple_agent -v
 
 # With coverage
-uv run pytest tests/ --cov=agentdock_adapters --cov-report=term-missing
+uv run pytest tests/ --cov=dockrion_adapters --cov-report=term-missing
 ```
 
 ### Adding a New Framework
 
-1. Create adapter file: `agentdock_adapters/myframework_adapter.py`
+1. Create adapter file: `dockrion_adapters/myframework_adapter.py`
 2. Implement `AgentAdapter` protocol
 3. Add to registry in `registry.py`
 4. Write tests in `tests/test_myframework_adapter.py`
@@ -431,7 +431,7 @@ except Exception as e:
 **Tests:** ✅ **45/45 PASSING**  
 **Documentation:** ✅ **COMPREHENSIVE**
 
-The AgentDock Adapters package is complete and ready for integration with the SDK and Runtime packages!
+The Dockrion Adapters package is complete and ready for integration with the SDK and Runtime packages!
 
 ---
 

@@ -49,7 +49,7 @@
 ### What Adapters Are
 
 **One-Sentence Summary:**
-> Adapters provide a uniform interface to different agent frameworks, enabling AgentDock runtime to invoke any agent type through a consistent API.
+> Adapters provide a uniform interface to different agent frameworks, enabling Dockrion runtime to invoke any agent type through a consistent API.
 
 **The Problem They Solve:**
 ```python
@@ -111,7 +111,7 @@ User's Agent (LangGraph/LangChain/etc)
 **Files to Create:**
 ```
 packages/adapters/
-├── agentdock_adapters/
+├── dockrion_adapters/
 │   ├── __init__.py           # Public API
 │   ├── base.py               # Protocol definition ⭐
 │   ├── langgraph_adapter.py  # LangGraph implementation ⭐
@@ -282,7 +282,7 @@ def test_adapter_overhead():
 ### Example 1: Basic Usage
 
 ```python
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 adapter = get_adapter("langgraph")
 adapter.load("app.graph:build_graph")
@@ -293,7 +293,7 @@ print(result)
 ### Example 2: Error Handling
 
 ```python
-from agentdock_adapters.errors import AdapterLoadError
+from dockrion_adapters.errors import AdapterLoadError
 
 try:
     adapter.load("app.graph:build_graph")
@@ -307,7 +307,7 @@ except AdapterLoadError as e:
 ```python
 # Generated runtime.py
 
-from agentdock_adapters import get_adapter
+from dockrion_adapters import get_adapter
 
 # Load at startup
 adapter = get_adapter(FRAMEWORK)
