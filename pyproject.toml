@@ -5,6 +5,7 @@ members = [
   "packages/adapters",
   "packages/policy-engine",
   "packages/telemetry",
+  "packages/runtime",
   "packages/sdk-python",
   "packages/cli"
 ]
@@ -15,6 +16,7 @@ dockrion-schema = { workspace = true }
 dockrion-adapters = { workspace = true }
 dockrion-policy = { workspace = true }
 dockrion-telemetry = { workspace = true }
+dockrion-runtime = { workspace = true }
 dockrion-sdk = { workspace = true }
 dockrion-cli = { workspace = true }
 

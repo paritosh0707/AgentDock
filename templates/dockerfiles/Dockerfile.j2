@@ -61,11 +61,13 @@ RUN uv pip install --system --no-cache -r /build/requirements.txt
 COPY packages/common-py/ /dockrion_packages/common-py/
 COPY packages/schema/ /dockrion_packages/schema/
 COPY packages/adapters/ /dockrion_packages/adapters/
+COPY packages/runtime/ /dockrion_packages/runtime/
 
 RUN uv pip install --system --no-cache \
     -e /dockrion_packages/common-py \
     -e /dockrion_packages/schema \
-    -e /dockrion_packages/adapters
+    -e /dockrion_packages/adapters \
+    -e /dockrion_packages/runtime
 
 # -----------------------------------------------------------------------------
 # Runtime Stage - Minimal production image
