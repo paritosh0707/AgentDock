@@ -283,18 +283,26 @@ class HandlerAdapter:
         Returns:
             Output dictionary from async handler
         """
+        # Capture handler reference for thread-safe closure
+        handler = self._handler
+        
+        def run_in_new_loop() -> Dict[str, Any]:
+            """Run the async handler in a fresh event loop (for executor thread)."""
+            return asyncio.run(handler(payload))
+        
         try:
             # Try to get running loop
             loop = asyncio.get_running_loop()
-            # We're already in an async context - this shouldn't happen in normal flow
-            # but handle it gracefully
+            # We're already in an async context - run in separate thread
+            # to avoid nested event loop issues
             import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor() as executor:
-                future = executor.submit(asyncio.run, self._handler(payload))
+                # Defer coroutine creation until inside executor thread
+                future = executor.submit(run_in_new_loop)
                 return future.result()
         except RuntimeError:
-            # No running loop - create one
-            return asyncio.run(self._handler(payload))
+            # No running loop - create one directly
+            return asyncio.run(handler(payload))
     
     def get_metadata(self) -> Dict[str, Any]:
         """
