@@ -306,13 +306,23 @@ def create_app(
     @app.get("/info")
     async def get_info():
         """Get agent metadata and configuration."""
+        # Build agent info based on invocation mode
+        agent_info = {
+            "name": config.agent_name,
+            "description": config.agent_description,
+            "framework": config.agent_framework,
+            "mode": "handler" if config.use_handler_mode else "entrypoint",
+            "target": config.invocation_target
+        }
+        
+        # Include mode-specific field for clarity
+        if config.use_handler_mode:
+            agent_info["handler"] = config.agent_handler
+        else:
+            agent_info["entrypoint"] = config.agent_entrypoint
+        
         info = {
-            "agent": {
-                "name": config.agent_name,
-                "description": config.agent_description,
-                "framework": config.agent_framework,
-                "entrypoint": config.agent_entrypoint
-            },
+            "agent": agent_info,
             "auth_enabled": config.auth_enabled,
             "version": config.version
         }

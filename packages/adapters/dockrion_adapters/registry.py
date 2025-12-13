@@ -120,7 +120,6 @@ def get_handler_adapter() -> HandlerAdapter:
     return adapter
 
 
-## For the register adapter fucntion if user provides us the custom adapter class then we shoukld refre to that class on the runtime and thenw e ahve to creaet a custom fucntion to validate wether the provided details of the custom adapter in the DockFile is as poer requirement or not. This feature we will implement later on. the validation changes aslod should be done in the schema module. 
 def register_adapter(framework: str, adapter_class: Type[AgentAdapter]) -> None:
     """
     Register custom adapter for a framework.
