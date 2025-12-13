@@ -76,7 +76,21 @@ class RuntimeConfig:
         expose = spec.expose
         auth = spec.auth
         metadata = spec.metadata
-        arguments = spec.arguments or {}
+        
+        # arguments is Dict[str, Any] in schema - always a dict
+        arguments = spec.arguments if spec.arguments else {}
+        
+        # Extract timeout from arguments dict
+        timeout_sec = arguments.get("timeout_sec", 30) if isinstance(arguments, dict) else 30
+        
+        # cors is Optional[Dict[str, List[str]]] in schema - extract safely
+        cors_config = expose.cors if expose and expose.cors else None
+        if cors_config and isinstance(cors_config, dict):
+            cors_origins = cors_config.get("origins", ["*"])
+            cors_methods = cors_config.get("methods", ["*"])
+        else:
+            cors_origins = ["*"]
+            cors_methods = ["*"]
         
         return cls(
             agent_name=agent.name,
@@ -86,12 +100,12 @@ class RuntimeConfig:
             host=expose.host if expose else "0.0.0.0",
             port=expose.port if expose else 8080,
             enable_streaming=bool(expose and expose.streaming and expose.streaming != "none"),
-            timeout_sec=arguments.get("timeout_sec", 30) if isinstance(arguments, dict) else 30,
+            timeout_sec=timeout_sec,
             auth_enabled=bool(auth and auth.mode != "none"),
             auth_mode=auth.mode if auth else "none",
             version=metadata.version if metadata else "1.0.0",
-            cors_origins=expose.cors.get("origins", ["*"]) if expose and expose.cors else ["*"],
-            cors_methods=expose.cors.get("methods", ["*"]) if expose and expose.cors else ["*"],
+            cors_origins=cors_origins,
+            cors_methods=cors_methods,
         )
 
 
