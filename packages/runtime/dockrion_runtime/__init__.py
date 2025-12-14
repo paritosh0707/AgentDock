@@ -7,16 +7,38 @@ Usage:
     from dockrion_runtime import create_app
     
     app = create_app(spec=my_spec, agent_entrypoint="app.graph:build")
+
+Authentication:
+    from dockrion_runtime.auth import (
+        AuthContext,
+        create_auth_handler,
+        generate_api_key,
+    )
 """
 
 from .app import create_app, RuntimeConfig
 from .metrics import RuntimeMetrics
 
+# Re-export key auth utilities at package level
+from .auth import (
+    AuthContext,
+    create_auth_handler,
+    generate_api_key,
+    is_jwt_available,
+)
+
 __version__ = "0.1.0"
 
 __all__ = [
+    # App factory
     "create_app",
     "RuntimeConfig",
     "RuntimeMetrics",
+    
+    # Auth
+    "AuthContext",
+    "create_auth_handler",
+    "generate_api_key",
+    "is_jwt_available",
 ]
 

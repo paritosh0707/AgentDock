@@ -391,15 +391,24 @@ class Policies(BaseModel):
 
 
 # =============================================================================
-# AUTH CONFIGURATION (Future - Phase 2)
+# AUTH CONFIGURATION
 # =============================================================================
 
 class RoleConfig(BaseModel):
     """
     Role-based access control configuration.
     
-    NOTE: Auth enforcement happens in auth service or runtime.
-    Schema validates configuration structure.
+    Defines a named role with associated permissions.
+    Roles can be assigned to API keys or extracted from JWT claims.
+    
+    Example:
+        ```yaml
+        roles:
+          - name: admin
+            permissions: [invoke, view_metrics, deploy, rollback]
+          - name: operator
+            permissions: [invoke, view_metrics]
+        ```
     """
     name: str
     permissions: List[str]
@@ -420,7 +429,36 @@ class RoleConfig(BaseModel):
 
 
 class ApiKeysConfig(BaseModel):
-    """API key authentication configuration"""
+    """
+    API key authentication configuration.
+    
+    Supports two modes:
+    - Single key: One key from env_var
+    - Multi-key: Multiple keys matching prefix pattern
+    
+    Example (single key):
+        ```yaml
+        api_keys:
+          env_var: MY_AGENT_KEY
+          header: X-API-Key
+        ```
+    
+    Example (multi-key):
+        ```yaml
+        api_keys:
+          prefix: AGENT_KEY_  # Loads AGENT_KEY_PROD, AGENT_KEY_DEV, etc.
+          header: X-API-Key
+        ```
+    """
+    # Key source
+    env_var: str = "DOCKRION_API_KEY"
+    prefix: Optional[str] = None  # For multi-key mode
+    
+    # Request config
+    header: str = "X-API-Key"
+    allow_bearer: bool = True  # Allow Authorization: Bearer <key>
+    
+    # Key management (informational)
     enabled: bool = True
     rotation_days: Optional[int] = 30
     
@@ -433,21 +471,179 @@ class ApiKeysConfig(BaseModel):
         if v is not None and v <= 0:
             raise ValidationError(f"rotation_days must be positive. Got: {v}")
         return v
+    
+    @field_validator("header")
+    @classmethod
+    def validate_header_name(cls, v: str) -> str:
+        """Validate header name is reasonable"""
+        if not v or len(v) > 64:
+            raise ValidationError("Header name must be 1-64 characters")
+        return v
+
+
+class JWTClaimsConfig(BaseModel):
+    """
+    JWT claim mapping configuration.
+    
+    Maps JWT claims to identity context fields.
+    Supports nested claim paths with dot notation.
+    
+    Example:
+        ```yaml
+        claims:
+          user_id: sub
+          email: email
+          roles: permissions
+          tenant_id: org.tenant_id  # Nested claim
+        ```
+    """
+    user_id: str = "sub"
+    email: str = "email"
+    name: str = "name"
+    roles: str = "roles"
+    permissions: str = "permissions"
+    scopes: str = "scope"
+    tenant_id: Optional[str] = None
+    
+    model_config = ConfigDict(extra="allow")
+
+
+class JWTConfig(BaseModel):
+    """
+    JWT authentication configuration.
+    
+    Supports JWKS (recommended) or static public key.
+    
+    Example (JWKS - recommended):
+        ```yaml
+        jwt:
+          jwks_url: https://auth.company.com/.well-known/jwks.json
+          issuer: https://auth.company.com/
+          audience: my-agent-api
+          claims:
+            user_id: sub
+            roles: permissions
+        ```
+    
+    Example (static key):
+        ```yaml
+        jwt:
+          public_key_env: JWT_PUBLIC_KEY
+          issuer: my-issuer
+          audience: my-agent-api
+        ```
+    """
+    # Key source (one required)
+    jwks_url: Optional[str] = None
+    public_key_env: Optional[str] = None
+    
+    # Validation
+    issuer: Optional[str] = None
+    audience: Optional[str] = None
+    algorithms: List[str] = ["RS256"]
+    leeway_seconds: int = 30  # Clock skew tolerance
+    
+    # Claim mappings
+    claims: Optional[JWTClaimsConfig] = None
+    
+    model_config = ConfigDict(extra="allow")
+    
+    @field_validator("algorithms")
+    @classmethod
+    def validate_algorithms(cls, v: List[str]) -> List[str]:
+        """Validate algorithms are supported"""
+        supported = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512"]
+        for alg in v:
+            if alg not in supported:
+                raise ValidationError(
+                    f"Unsupported algorithm: '{alg}'. "
+                    f"Supported: {', '.join(supported)}"
+                )
+        return v
+    
+    @field_validator("leeway_seconds")
+    @classmethod
+    def validate_leeway(cls, v: int) -> int:
+        """Validate leeway is reasonable"""
+        if v < 0 or v > 300:
+            raise ValidationError("leeway_seconds must be 0-300")
+        return v
+
+
+class OAuth2Config(BaseModel):
+    """
+    OAuth2 token introspection configuration.
+    
+    Used for validating opaque tokens by calling the authorization server.
+    
+    Example:
+        ```yaml
+        oauth2:
+          introspection_url: https://auth.company.com/oauth/introspect
+          client_id_env: AGENT_CLIENT_ID
+          client_secret_env: AGENT_CLIENT_SECRET
+          required_scopes: [agent:invoke]
+        ```
+    
+    Note: This is a future feature planned for Phase 2.
+    """
+    introspection_url: Optional[str] = None
+    client_id_env: Optional[str] = None
+    client_secret_env: Optional[str] = None
+    required_scopes: List[str] = []
+    
+    model_config = ConfigDict(extra="allow")
 
 
 class AuthConfig(BaseModel):
     """
     Authentication and authorization configuration.
     
-    NOTE: These are optional in MVP. When auth service is ready,
-    these will be enforced.
+    Supports multiple authentication modes:
+    - **none**: No authentication (development/trusted networks)
+    - **api_key**: API key authentication (single or multi-key)
+    - **jwt**: JWT with JWKS support (enterprise SSO)
+    - **oauth2**: OAuth2 token introspection (future)
     
-    Note: mode field uses constants from common package (SUPPORTED_AUTH_MODES)
-    as the single source of truth for validation.
+    Example (API Key - simple):
+        ```yaml
+        auth:
+          mode: api_key
+        ```
+    
+    Example (JWT - enterprise):
+        ```yaml
+        auth:
+          mode: jwt
+          jwt:
+            jwks_url: https://auth.company.com/.well-known/jwks.json
+            issuer: https://auth.company.com/
+            audience: my-agent-api
+            claims:
+              user_id: sub
+              roles: permissions
+          roles:
+            - name: admin
+              permissions: [invoke, view_metrics, deploy]
+            - name: operator
+              permissions: [invoke, view_metrics]
+          rate_limits:
+            admin: "1000/minute"
+            operator: "100/minute"
+        ```
     """
-    mode: str = "api_key"  # Validated against SUPPORTED_AUTH_MODES from common
+    # Auth mode
+    mode: str = "api_key"
+    
+    # Mode-specific configuration
     api_keys: Optional[ApiKeysConfig] = None
+    jwt: Optional[JWTConfig] = None
+    oauth2: Optional[OAuth2Config] = None
+    
+    # RBAC
     roles: List[RoleConfig] = []
+    
+    # Rate limiting by role
     rate_limits: Dict[str, str] = {}
     
     model_config = ConfigDict(extra="allow")
@@ -455,11 +651,13 @@ class AuthConfig(BaseModel):
     @field_validator("mode")
     @classmethod
     def validate_auth_mode_supported(cls, v: str) -> str:
-        """Validate auth mode is supported (uses SUPPORTED_AUTH_MODES from common)"""
-        if v not in SUPPORTED_AUTH_MODES:
+        """Validate auth mode is supported"""
+        # Extended modes including 'none'
+        valid_modes = list(SUPPORTED_AUTH_MODES) + ["none"]
+        if v not in valid_modes:
             raise ValidationError(
                 f"Unsupported auth mode: '{v}'. "
-                f"Supported modes: {', '.join(SUPPORTED_AUTH_MODES)}"
+                f"Supported modes: {', '.join(valid_modes)}"
             )
         return v
     

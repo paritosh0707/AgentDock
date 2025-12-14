@@ -21,7 +21,7 @@ from dockrion_adapters import get_adapter, get_handler_adapter
 from dockrion_common.errors import DockrionError, ValidationError
 from dockrion_common.logger import get_logger
 
-from .auth import AuthHandler, create_auth_handler
+from .auth import create_auth_handler, AuthContext, AuthError
 from .policies import RuntimePolicyEngine, create_policy_engine
 from .metrics import RuntimeMetrics
 
@@ -147,7 +147,7 @@ class RuntimeState:
         self.spec: Optional[DockSpec] = None
         self.config: Optional[RuntimeConfig] = None
         self.metrics: Optional[RuntimeMetrics] = None
-        self.auth_handler: Optional[AuthHandler] = None
+        self.auth_handler = None  # BaseAuthHandler from auth module
         self.policy_engine: Optional[RuntimePolicyEngine] = None
         self.ready: bool = False
 
@@ -268,9 +268,23 @@ def create_app(
     # Dependency: Auth verification
     # =========================================================================
     
-    async def verify_auth(request: Request) -> Optional[str]:
-        """Verify authentication for protected endpoints."""
-        return await state.auth_handler.verify(request)
+    async def verify_auth(request: Request) -> AuthContext:
+        """
+        Verify authentication for protected endpoints.
+        
+        Returns:
+            AuthContext with identity information
+            
+        Raises:
+            HTTPException: On authentication failure (401/403)
+        """
+        try:
+            return await state.auth_handler.authenticate(request)
+        except AuthError as e:
+            raise HTTPException(
+                status_code=e.status_code,
+                detail=e.to_dict()
+            )
     
     # =========================================================================
     # Endpoints

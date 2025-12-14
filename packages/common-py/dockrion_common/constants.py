@@ -45,8 +45,8 @@ SUPPORTED_PROVIDERS = [
 ]
 """LLM providers supported by dockrion"""
 
-SUPPORTED_AUTH_MODES = ["jwt", "api_key", "oauth2"]
-"""Authentication modes supported by dockrion"""
+SUPPORTED_AUTH_MODES = ["none", "api_key", "jwt", "oauth2"]
+"""Authentication modes supported by dockrion (none = disabled)"""
 
 SUPPORTED_STREAMING = ["sse", "websocket", "none"]
 """Streaming modes for agent responses"""
