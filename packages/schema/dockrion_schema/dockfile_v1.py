@@ -651,13 +651,11 @@ class AuthConfig(BaseModel):
     @field_validator("mode")
     @classmethod
     def validate_auth_mode_supported(cls, v: str) -> str:
-        """Validate auth mode is supported"""
-        # Extended modes including 'none'
-        valid_modes = list(SUPPORTED_AUTH_MODES) + ["none"]
-        if v not in valid_modes:
+        """Validate auth mode is supported (uses SUPPORTED_AUTH_MODES from common)"""
+        if v not in SUPPORTED_AUTH_MODES:
             raise ValidationError(
                 f"Unsupported auth mode: '{v}'. "
-                f"Supported modes: {', '.join(valid_modes)}"
+                f"Supported modes: {', '.join(SUPPORTED_AUTH_MODES)}"
             )
         return v
     
