@@ -141,8 +141,9 @@ class TemplateContext:
             "generated_at": datetime.utcnow().isoformat(),
             "python_version": "3.12",
             
-            # Full spec as JSON (for embedding in runtime)
-            "spec_json": json.dumps(spec_dict, default=str),
+            # Full spec as Python literal (for embedding in runtime)
+            # Use repr() instead of json.dumps() to get valid Python syntax
+            "spec_python": repr(spec_dict),
             
             # Flattened spec sections for easy template access
             "agent": spec_dict.get("agent", {}),
@@ -175,10 +176,19 @@ class TemplateContext:
         """
         directories = []
         
-        # Extract from entrypoint
+        # Extract from entrypoint (if using entrypoint mode)
         entrypoint = self.spec.agent.entrypoint
-        if ":" in entrypoint:
+        if entrypoint and ":" in entrypoint:
             module_path = entrypoint.rsplit(":", 1)[0]
+            # Get top-level module/package
+            top_module = module_path.split(".")[0]
+            if top_module and top_module not in directories:
+                directories.append(top_module)
+        
+        # Extract from handler (if using handler mode)
+        handler = self.spec.agent.handler
+        if handler and ":" in handler:
+            module_path = handler.rsplit(":", 1)[0]
             # Get top-level module/package
             top_module = module_path.split(".")[0]
             if top_module and top_module not in directories:

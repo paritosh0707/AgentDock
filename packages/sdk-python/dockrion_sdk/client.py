@@ -172,12 +172,20 @@ def invoke_local(dockfile_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
             f"Failed to get adapter for framework '{spec.agent.framework}': {str(e)}"
         )
     
-    # Load the agent
+    # Load the agent (entrypoint or handler mode)
     try:
-        adapter.load(spec.agent.entrypoint)
+        if spec.agent.handler:
+            # Handler mode: load direct callable
+            adapter.load(spec.agent.handler)
+        elif spec.agent.entrypoint:
+            # Entrypoint mode: load framework agent factory
+            adapter.load(spec.agent.entrypoint)
+        else:
+            raise DockrionError("Agent must have either 'handler' or 'entrypoint' specified")
     except Exception as e:
+        entrypoint_or_handler = spec.agent.handler or spec.agent.entrypoint
         raise DockrionError(
-            f"Failed to load agent from entrypoint '{spec.agent.entrypoint}': {str(e)}\n"
+            f"Failed to load agent from '{entrypoint_or_handler}': {str(e)}\n"
             f"Make sure the module path is correct and the agent is properly implemented."
         )
     

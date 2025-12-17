@@ -19,7 +19,28 @@ import sys
 from pathlib import Path
 
 # Add project root to Python path for agent module imports
-project_root = Path(__file__).parent.parent
+# We need to find the directory that contains the agent's top-level module
+current_dir = Path(__file__).parent
+project_root = current_dir.parent
+
+# For handlers/entrypoints in nested directories (e.g., examples/agent_name/),
+# we need to find the actual project root by looking for the top-level module
+{% if agent.handler -%}
+handler_module = "{{ agent.handler }}".split(":")[0]
+{% else -%}
+handler_module = "{{ agent.entrypoint }}".split(":")[0]
+{% endif -%}
+top_level_module = handler_module.split(".")[0]
+
+# Walk up the directory tree to find where the top-level module exists
+max_levels = 5  # Safety limit to prevent infinite loops
+for _ in range(max_levels):
+    if (project_root / top_level_module).exists():
+        break
+    if project_root.parent == project_root:  # Reached filesystem root
+        break
+    project_root = project_root.parent
+
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
 
@@ -30,7 +51,7 @@ from dockrion_schema import DockSpec
 # Agent Specification (Embedded from Dockfile.yaml)
 # ============================================================================
 
-SPEC_DATA = {{ spec_json }}
+SPEC_DATA = {{ spec_python }}
 
 # ============================================================================
 # Create Application

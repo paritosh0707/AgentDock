@@ -18,7 +18,7 @@ agent:
   
   # Handler mode: Point to a direct callable function
   # The function receives payload dict and returns response dict
-  handler: examples.invoice_copilot.app.service:process_invoice
+  handler: app.service:process_invoice
   
   # Framework is optional for handlers (defaults to "custom")
   # But can be specified for dependency detection in requirements.txt
@@ -48,7 +48,15 @@ io_schema:
       invoice_date: { type: string }
       total_amount: { type: number }
       currency: { type: string }
-      line_items: { type: array }
+      line_items: 
+        type: array
+        items:
+          type: object
+          properties:
+            description: { type: string }
+            quantity: { type: number }
+            unit_price: { type: number }
+            amount: { type: number }
       processing_metadata: { type: object }
       success: { type: boolean }
 
@@ -57,6 +65,9 @@ arguments:
 
 auth:
   mode: api_key
+  api_keys:
+    env_var: MY_AGENT_KEY
+    header: X-API-Key  # Optional: defaults to X-API-Key
 
 expose:
   rest: true

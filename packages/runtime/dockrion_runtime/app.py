@@ -8,13 +8,16 @@ import time
 import json
 import asyncio
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, AsyncGenerator
+from typing import Dict, Any, Optional, AsyncGenerator, Type
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request, Depends, HTTPException
+from fastapi import FastAPI, Request, Depends, HTTPException, Body
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader, HTTPBearer
+from fastapi.openapi.models import SecuritySchemeType
 from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from pydantic import BaseModel, Field, create_model
 
 from dockrion_schema import DockSpec
 from dockrion_adapters import get_adapter, get_handler_adapter
@@ -245,6 +248,37 @@ def create_app(
         
         logger.info(f"👋 Shutting down agent: {config.agent_name}")
     
+    # Build OpenAPI security schemes based on auth configuration
+    openapi_security_schemes = {}
+    if config.auth_enabled and config.auth_mode == "api_key":
+        # Get the header name from auth config
+        header_name = "X-API-Key"
+        if spec.auth and hasattr(spec.auth, 'api_keys') and spec.auth.api_keys:
+            header_name = spec.auth.api_keys.get('header', 'X-API-Key') if isinstance(spec.auth.api_keys, dict) else "X-API-Key"
+        
+        openapi_security_schemes = {
+            "APIKeyHeader": {
+                "type": "apiKey",
+                "in": "header",
+                "name": header_name,
+                "description": f"API Key authentication. Pass your API key in the `{header_name}` header."
+            },
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "API Key authentication. Pass your API key as a Bearer token in the `Authorization` header."
+            }
+        }
+    elif config.auth_enabled and config.auth_mode == "jwt":
+        openapi_security_schemes = {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "JWT authentication. Pass your JWT token in the `Authorization` header."
+            }
+        }
+    
     # Create FastAPI app
     app = FastAPI(
         title=config.agent_name,
@@ -254,6 +288,44 @@ def create_app(
         docs_url="/docs",
         redoc_url="/redoc"
     )
+    
+    # Add security schemes to OpenAPI schema
+    if openapi_security_schemes:
+        def custom_openapi():
+            if app.openapi_schema:
+                return app.openapi_schema
+            
+            from fastapi.openapi.utils import get_openapi
+            openapi_schema = get_openapi(
+                title=app.title,
+                version=app.version,
+                description=app.description,
+                routes=app.routes,
+            )
+            
+            # Add security schemes
+            openapi_schema["components"]["securitySchemes"] = openapi_security_schemes
+            
+            # Apply security to all protected endpoints
+            for path, path_item in openapi_schema["paths"].items():
+                for method, operation in path_item.items():
+                    if method in ["get", "post", "put", "delete", "patch"]:
+                        # Skip health and schema endpoints (they're public)
+                        if path in ["/health", "/ready", "/schema", "/info"]:
+                            continue
+                        # Add security requirement to protected endpoints
+                        if "APIKeyHeader" in openapi_security_schemes:
+                            operation["security"] = [
+                                {"APIKeyHeader": []},
+                                {"BearerAuth": []}
+                            ]
+                        else:
+                            operation["security"] = [{"BearerAuth": []}]
+            
+            app.openapi_schema = openapi_schema
+            return app.openapi_schema
+        
+        app.openapi = custom_openapi
     
     # Add CORS middleware
     app.add_middleware(
@@ -358,33 +430,37 @@ def create_app(
         data = generate_latest()
         return Response(content=data, media_type=CONTENT_TYPE_LATEST)
     
+    # Create Pydantic model for request body validation
+    InputModel = _create_pydantic_model_from_schema(
+        f"{config.agent_name.replace('-', '_').capitalize()}Input",
+        spec.io_schema.input if spec.io_schema else None
+    )
+    
     @app.post("/invoke")
     async def invoke_agent(
-        request: Request,
-        api_key: Optional[str] = Depends(verify_auth)
+        payload: InputModel = Body(..., description="Agent input payload"),
+        auth_context: AuthContext = Depends(verify_auth)
     ):
         """
         Invoke the agent with the given payload.
         
         The adapter layer handles framework-specific invocation logic.
+        Request body is automatically validated against the input schema.
         """
         state.metrics.inc_active()
         start_time = time.time()
         
         try:
-            # Parse request payload
-            try:
-                payload = await request.json()
-            except json.JSONDecodeError:
-                raise ValidationError("Invalid JSON payload")
+            # Convert Pydantic model to dict
+            payload_dict = payload.model_dump() if hasattr(payload, 'model_dump') else payload.dict()
             
-            logger.info("📥 Invoke request received", extra={"payload_keys": list(payload.keys())})
+            logger.info("📥 Invoke request received", extra={"payload_keys": list(payload_dict.keys())})
             
-            # Validate input schema if defined
-            _validate_input_schema(payload, spec.io_schema)
+            # Note: Pydantic already validated the input schema
+            # Additional validation can be done by _validate_input_schema if needed
             
             # Apply input policies
-            payload = state.policy_engine.validate_input(payload)
+            payload_dict = state.policy_engine.validate_input(payload_dict)
             
             # Invoke agent via adapter
             logger.debug(f"Invoking {config.agent_framework} agent...")
@@ -393,14 +469,14 @@ def create_app(
                 try:
                     result = await asyncio.wait_for(
                         asyncio.get_event_loop().run_in_executor(
-                            None, lambda: state.adapter.invoke(payload)
+                            None, lambda: state.adapter.invoke(payload_dict)
                         ),
                         timeout=config.timeout_sec
                     )
                 except asyncio.TimeoutError:
                     raise DockrionError(f"Agent invocation timed out after {config.timeout_sec}s")
             else:
-                result = state.adapter.invoke(payload)
+                result = state.adapter.invoke(payload_dict)
             
             # Apply output policies
             result = state.policy_engine.apply_output_policies(result)
@@ -454,26 +530,26 @@ def create_app(
     if config.enable_streaming:
         @app.post("/invoke/stream")
         async def invoke_agent_stream(
-            request: Request,
-            api_key: Optional[str] = Depends(verify_auth)
+            payload: InputModel = Body(..., description="Agent input payload"),
+            auth_context: AuthContext = Depends(verify_auth)
         ):
             """Invoke the agent with streaming response (SSE)."""
             state.metrics.inc_active()
             
             try:
-                payload = await request.json()
+                # Convert Pydantic model to dict
+                payload_dict = payload.model_dump() if hasattr(payload, 'model_dump') else payload.dict()
                 
-                # Validate
-                _validate_input_schema(payload, spec.io_schema)
-                payload = state.policy_engine.validate_input(payload)
+                # Apply input policies
+                payload_dict = state.policy_engine.validate_input(payload_dict)
                 
                 async def event_generator() -> AsyncGenerator[str, None]:
                     try:
                         if hasattr(state.adapter, 'invoke_stream'):
-                            async for chunk in state.adapter.invoke_stream(payload):
+                            async for chunk in state.adapter.invoke_stream(payload_dict):
                                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
                         else:
-                            result = state.adapter.invoke(payload)
+                            result = state.adapter.invoke(payload_dict)
                             yield f"data: {json.dumps({'output': result})}\n\n"
                         
                         yield f"data: {json.dumps({'done': True})}\n\n"
@@ -494,6 +570,78 @@ def create_app(
                 raise HTTPException(status_code=500, detail=str(e))
     
     return app
+
+
+def _create_pydantic_model_from_schema(
+    schema_name: str,
+    json_schema: Optional[Any]
+) -> Type[BaseModel]:
+    """
+    Create a Pydantic model from JSON Schema definition.
+    
+    This enables automatic FastAPI request validation and OpenAPI schema generation.
+    
+    Args:
+        schema_name: Name for the generated model
+        json_schema: JSON Schema definition (IOSubSchema)
+        
+    Returns:
+        Pydantic BaseModel class
+    """
+    if not json_schema or not hasattr(json_schema, 'properties'):
+        # Return a generic dict model if no schema
+        return create_model(
+            schema_name,
+            __base__=BaseModel,
+        )
+    
+    # Map JSON Schema types to Python types
+    type_mapping = {
+        "string": str,
+        "number": float,
+        "integer": int,
+        "boolean": bool,
+        "array": list,
+        "object": dict,
+    }
+    
+    # Build field definitions
+    field_definitions = {}
+    properties = json_schema.properties if hasattr(json_schema, 'properties') else {}
+    required_fields = json_schema.required if hasattr(json_schema, 'required') else []
+    
+    for field_name, field_schema in properties.items():
+        if not isinstance(field_schema, dict):
+            continue
+            
+        # Get type
+        field_type_str = field_schema.get("type", "string")
+        field_type = type_mapping.get(field_type_str, Any)
+        
+        # Get description
+        description = field_schema.get("description", "")
+        
+        # Determine if required
+        is_required = field_name in required_fields
+        
+        # Create Field with metadata
+        if is_required:
+            field_definitions[field_name] = (
+                field_type,
+                Field(..., description=description)
+            )
+        else:
+            field_definitions[field_name] = (
+                Optional[field_type],
+                Field(None, description=description)
+            )
+    
+    # Create the model
+    return create_model(
+        schema_name,
+        __base__=BaseModel,
+        **field_definitions
+    )
 
 
 def _validate_input_schema(payload: Dict[str, Any], io_schema) -> None:

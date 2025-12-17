@@ -62,11 +62,20 @@ def validate_dockspec(path: str) -> Dict[str, Any]:
         }
     
     # Additional validation checks
-    # Check entrypoint format
-    try:
-        validate_entrypoint(spec.agent.entrypoint)
-    except ValidationError as e:
-        errors.append(f"Invalid entrypoint format: {str(e)}")
+    # Check entrypoint format (only if entrypoint mode is used)
+    if spec.agent.entrypoint:
+        try:
+            validate_entrypoint(spec.agent.entrypoint)
+        except ValidationError as e:
+            errors.append(f"Invalid entrypoint format: {str(e)}")
+    
+    # Validate handler format if handler mode is used
+    if spec.agent.handler:
+        try:
+            from dockrion_common.validation import validate_handler
+            validate_handler(spec.agent.handler)
+        except ValidationError as e:
+            errors.append(f"Invalid handler format: {str(e)}")
     
     # Check for potential issues (warnings)
     if spec.model and spec.model.temperature and spec.model.temperature > 1.0:
