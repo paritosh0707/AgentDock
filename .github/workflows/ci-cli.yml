@@ -7,5 +7,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
-      - run: pip install -e packages/schema -e packages/sdk-python -e packages/cli
-      - run: python -m dockrion_cli.main validate-cmd || python -m dockrion_cli.main --help
+      - name: Install dependencies
+        run: |
+          pip install -e packages/common-py
+          pip install -e packages/schema
+          pip install -e packages/adapters
+          pip install -e packages/sdk-python
+          pip install -e packages/cli
+      - name: Test CLI
+        run: python -m dockrion_cli.main validate --help || python -m dockrion_cli.main --help
