@@ -23,7 +23,6 @@ from dockrion_common import (
     hash_api_key,
     validate_api_key,
     # HTTP Models
-    success_response,
     error_response,
 )
 
@@ -135,12 +134,6 @@ class TestAuth:
 
 class TestHTTPModels:
     """Test HTTP response models"""
-    
-    def test_success_response(self):
-        """Test success response"""
-        response = success_response({"id": "123", "status": "ok"})
-        assert response["success"] is True
-        assert response["data"]["id"] == "123"
     
     def test_error_response_dockrion_error(self):
         """Test error response with DockrionError"""

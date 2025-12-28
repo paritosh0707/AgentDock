@@ -21,12 +21,9 @@ Usage:
 import logging
 import json
 import sys
-import time
 from typing import Any, Dict, Optional
 from contextvars import ContextVar
-from datetime import datetime
-
-from .constants import LOG_LEVELS
+from datetime import datetime, timezone
 
 
 # Thread-safe context variable for request/correlation ID
@@ -76,7 +73,7 @@ class JSONFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         """Format log record as JSON"""
         log_data = {
-            "timestamp": datetime.utcfromtimestamp(record.created).isoformat() + "Z",
+            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat().replace("+00:00", "Z"),
             "level": record.levelname,
             "service": getattr(record, 'service_name', 'unknown'),
             "message": record.getMessage(),
@@ -288,7 +285,9 @@ class DockrionLogger:
             >>> request_logger.info("Processing request")  # Includes request_id and user_id
             >>> request_logger.info("Request complete")    # Also includes both IDs
         """
-        new_logger = DockrionLogger(self.service_name)
+        # Create a lightweight copy without re-initializing (avoids handler manipulation)
+        new_logger = object.__new__(DockrionLogger)
+        new_logger.service_name = self.service_name
         new_logger.context = {**self.context, **ctx}
         new_logger.logger = self.logger  # Share underlying logger
         return new_logger

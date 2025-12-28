@@ -23,6 +23,14 @@ from dockrion_schema import DockSpec
 from dockrion_adapters import get_adapter, get_handler_adapter
 from dockrion_common.errors import DockrionError, ValidationError
 from dockrion_common.logger import get_logger
+from dockrion_common.http_models import (
+    error_response,
+    health_response,
+    invoke_response,
+    ready_response,
+    schema_response,
+    info_response,
+)
 
 from .auth import create_auth_handler, AuthContext, AuthError
 from .policies import RuntimePolicyEngine, create_policy_engine
@@ -365,29 +373,30 @@ def create_app(
     @app.get("/health")
     async def health_check():
         """Health check for load balancers and orchestrators."""
-        return {
-            "status": "healthy",
-            "agent": config.agent_name,
-            "framework": config.agent_framework,
-            "version": config.version
-        }
+        return health_response(
+            service=f"runtime:{config.agent_name}",
+            version=config.version,
+            status="ok",
+            agent=config.agent_name,
+            framework=config.agent_framework
+        )
     
     @app.get("/ready")
     async def readiness_check():
         """Readiness check - verifies agent is fully initialized."""
         if not state.ready or state.adapter is None:
             raise HTTPException(status_code=503, detail="Agent not ready")
-        return {"status": "ready", "agent": config.agent_name}
+        return ready_response(agent=config.agent_name)
     
     @app.get("/schema")
     async def get_schema():
         """Get the input/output schema for this agent."""
         io_schema = spec.io_schema
-        return {
-            "agent": config.agent_name,
-            "input_schema": io_schema.input.model_dump() if io_schema and io_schema.input else {},
-            "output_schema": io_schema.output.model_dump() if io_schema and io_schema.output else {}
-        }
+        return schema_response(
+            agent=config.agent_name,
+            input_schema=io_schema.input.model_dump() if io_schema and io_schema.input else {},
+            output_schema=io_schema.output.model_dump() if io_schema and io_schema.output else {}
+        )
     
     @app.get("/info")
     async def get_info():
@@ -407,22 +416,15 @@ def create_app(
         else:
             agent_info["entrypoint"] = config.agent_entrypoint
         
-        info = {
-            "agent": agent_info,
-            "auth_enabled": config.auth_enabled,
-            "version": config.version
-        }
+        # Get optional metadata
+        metadata = spec.metadata.model_dump() if spec.metadata else None
         
-        if spec.model:
-            info["model"] = {
-                "provider": spec.model.provider,
-                "name": spec.model.name
-            }
-        
-        if spec.metadata:
-            info["metadata"] = spec.metadata.model_dump()
-        
-        return info
+        return info_response(
+            agent=agent_info,
+            auth_enabled=config.auth_enabled,
+            version=config.version,
+            metadata=metadata
+        )
     
     @app.get("/metrics")
     async def prometheus_metrics():
@@ -489,22 +491,21 @@ def create_app(
             
             logger.info(f"✅ Invoke completed in {latency:.3f}s")
             
-            return JSONResponse({
-                "success": True,
-                "output": result,
-                "metadata": {
+            return JSONResponse(invoke_response(
+                output=result,
+                metadata={
                     "agent": config.agent_name,
                     "framework": config.agent_framework,
                     "latency_seconds": round(latency, 3)
                 }
-            })
+            ))
             
         except ValidationError as e:
             state.metrics.inc_request("invoke", "validation_error")
             logger.warning(f"⚠️ Validation error: {e}")
             return JSONResponse(
                 status_code=400,
-                content={"success": False, "error": str(e), "error_type": "ValidationError"}
+                content=error_response(e)
             )
             
         except DockrionError as e:
@@ -512,7 +513,7 @@ def create_app(
             logger.error(f"❌ Dockrion error: {e}")
             return JSONResponse(
                 status_code=500,
-                content={"success": False, "error": str(e), "error_type": "DockrionError"}
+                content=error_response(e)
             )
             
         except Exception as e:
@@ -520,7 +521,7 @@ def create_app(
             logger.error(f"❌ Unexpected error: {e}", exc_info=True)
             return JSONResponse(
                 status_code=500,
-                content={"success": False, "error": str(e), "error_type": type(e).__name__}
+                content=error_response(e)
             )
             
         finally:

@@ -5,48 +5,16 @@ This module provides standard response models for consistent API responses acros
 all dockrion services.
 
 Usage:
-    from dockrion_common.http_models import success_response, error_response
+    from dockrion_common.http_models import error_response, invoke_response
     
-    return success_response({"id": "123", "status": "running"})
+    return invoke_response(output=result, metadata={"agent": "my-agent"})
     return error_response(ValidationError("Invalid input"))
 """
 
-from typing import Any, List
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, ConfigDict
 
 from .errors import DockrionError
-
-
-class APIResponse(BaseModel):
-    """
-    Standard success response model.
-    
-    Attributes:
-        success: Always True for success responses
-        data: Response payload (any type)
-        
-    Examples:
-        >>> response = APIResponse(data={"id": "123", "status": "running"})
-        >>> response.model_dump()
-        {'success': True, 'data': {'id': '123', 'status': 'running'}}
-    """
-    success: bool = True
-    data: Any
-    
-    model_config = ConfigDict(
-        json_schema_extra={
-            "examples": [
-                {
-                    "success": True,
-                    "data": {
-                        "id": "dep-123",
-                        "agent": "invoice-copilot",
-                        "status": "running"
-                    }
-                }
-            ]
-        }
-    )
 
 
 class ErrorResponse(BaseModel):
@@ -140,26 +108,6 @@ class PaginatedResponse(BaseModel):
     )
 
 
-def success_response(data: Any) -> dict:
-    """
-    Create a standard success response dictionary.
-    
-    Args:
-        data: Response payload (any JSON-serializable type)
-        
-    Returns:
-        Dictionary with success=True and data
-        
-    Examples:
-        >>> success_response({"id": "123", "status": "running"})
-        {'success': True, 'data': {'id': '123', 'status': 'running'}}
-        
-        >>> success_response([1, 2, 3])
-        {'success': True, 'data': [1, 2, 3]}
-    """
-    return APIResponse(data=data).model_dump()
-
-
 def error_response(error: Exception) -> dict:
     """
     Create a standard error response dictionary from an exception.
@@ -236,6 +184,8 @@ class HealthResponse(BaseModel):
         service: Service name
         version: Service version
         timestamp: Unix timestamp of the health check
+        agent: Optional agent name (for runtime health checks)
+        framework: Optional agent framework (for runtime health checks)
         
     Examples:
         >>> response = HealthResponse(
@@ -249,6 +199,8 @@ class HealthResponse(BaseModel):
     service: str
     version: str
     timestamp: float
+    agent: Optional[str] = None
+    framework: Optional[str] = None
     
     model_config = ConfigDict(
         json_schema_extra={
@@ -258,13 +210,27 @@ class HealthResponse(BaseModel):
                     "service": "controller",
                     "version": "1.0.0",
                     "timestamp": 1699456789.123
+                },
+                {
+                    "status": "ok",
+                    "service": "runtime:invoice-copilot",
+                    "version": "1.0.0",
+                    "timestamp": 1699456789.123,
+                    "agent": "invoice-copilot",
+                    "framework": "langgraph"
                 }
             ]
         }
     )
 
 
-def health_response(service: str, version: str, status: str = "ok") -> dict:
+def health_response(
+    service: str,
+    version: str,
+    status: str = "ok",
+    agent: Optional[str] = None,
+    framework: Optional[str] = None
+) -> dict:
     """
     Create a standard health check response.
     
@@ -272,6 +238,8 @@ def health_response(service: str, version: str, status: str = "ok") -> dict:
         service: Service name
         version: Service version
         status: Health status (default: "ok")
+        agent: Optional agent name (for runtime health checks)
+        framework: Optional agent framework (for runtime health checks)
         
     Returns:
         Dictionary with health check data
@@ -280,12 +248,289 @@ def health_response(service: str, version: str, status: str = "ok") -> dict:
         >>> import time
         >>> health_response("controller", "1.0.0")
         {'status': 'ok', 'service': 'controller', 'version': '1.0.0', 'timestamp': ...}
+        >>> health_response("runtime:invoice-copilot", "1.0.0", agent="invoice-copilot", framework="langgraph")
+        {'status': 'ok', 'service': '...', 'version': '1.0.0', 'timestamp': ..., 'agent': '...', 'framework': '...'}
     """
     import time
     return HealthResponse(
         status=status,
         service=service,
         version=version,
-        timestamp=time.time()
+        timestamp=time.time(),
+        agent=agent,
+        framework=framework
+    ).model_dump(exclude_none=True)
+
+
+class InvokeResponse(BaseModel):
+    """
+    Standard response model for agent invocation.
+    
+    Attributes:
+        success: Always True for success responses
+        output: Agent output (any type)
+        metadata: Invocation metadata (agent name, framework, latency, etc.)
+        
+    Examples:
+        >>> response = InvokeResponse(
+        ...     output={"result": "processed"},
+        ...     metadata={"agent": "invoice-copilot", "latency_seconds": 0.123}
+        ... )
+        >>> response.model_dump()
+        {'success': True, 'output': {...}, 'metadata': {...}}
+    """
+    success: bool = True
+    output: Any
+    metadata: Dict[str, Any]
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "success": True,
+                    "output": {
+                        "vendor": "Acme Corp",
+                        "amount": 1500.00,
+                        "currency": "USD"
+                    },
+                    "metadata": {
+                        "agent": "invoice-copilot",
+                        "framework": "langgraph",
+                        "latency_seconds": 0.523
+                    }
+                }
+            ]
+        }
+    )
+
+
+def invoke_response(output: Any, metadata: Dict[str, Any]) -> dict:
+    """
+    Create a standard agent invocation response dictionary.
+    
+    Args:
+        output: Agent output (any JSON-serializable type)
+        metadata: Invocation metadata dictionary
+        
+    Returns:
+        Dictionary with success=True, output, and metadata
+        
+    Examples:
+        >>> invoke_response(
+        ...     output={"vendor": "Acme Corp"},
+        ...     metadata={"agent": "invoice-copilot", "latency_seconds": 0.5}
+        ... )
+        {'success': True, 'output': {'vendor': 'Acme Corp'}, 'metadata': {...}}
+    """
+    return InvokeResponse(output=output, metadata=metadata).model_dump()
+
+
+class ReadyResponse(BaseModel):
+    """
+    Standard readiness check response model.
+    
+    Attributes:
+        success: Always True for success responses
+        status: Readiness status ("ready")
+        agent: Agent name
+        
+    Examples:
+        >>> response = ReadyResponse(status="ready", agent="invoice-copilot")
+        >>> response.model_dump()
+        {'success': True, 'status': 'ready', 'agent': 'invoice-copilot'}
+    """
+    success: bool = True
+    status: str  # "ready"
+    agent: str
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "success": True,
+                    "status": "ready",
+                    "agent": "invoice-copilot"
+                }
+            ]
+        }
+    )
+
+
+def ready_response(agent: str, status: str = "ready") -> dict:
+    """
+    Create a standard readiness check response.
+    
+    Args:
+        agent: Agent name
+        status: Readiness status (default: "ready")
+        
+    Returns:
+        Dictionary with success=True, status, and agent
+        
+    Examples:
+        >>> ready_response("invoice-copilot")
+        {'success': True, 'status': 'ready', 'agent': 'invoice-copilot'}
+    """
+    return ReadyResponse(status=status, agent=agent).model_dump()
+
+
+class SchemaResponse(BaseModel):
+    """
+    Standard schema endpoint response model.
+    
+    Attributes:
+        success: Always True for success responses
+        agent: Agent name
+        input_schema: Input JSON schema definition
+        output_schema: Output JSON schema definition
+        
+    Examples:
+        >>> response = SchemaResponse(
+        ...     agent="invoice-copilot",
+        ...     input_schema={"type": "object", "properties": {...}},
+        ...     output_schema={"type": "object", "properties": {...}}
+        ... )
+    """
+    success: bool = True
+    agent: str
+    input_schema: Dict[str, Any]
+    output_schema: Dict[str, Any]
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "success": True,
+                    "agent": "invoice-copilot",
+                    "input_schema": {
+                        "type": "object",
+                        "properties": {
+                            "document_text": {"type": "string"}
+                        },
+                        "required": ["document_text"]
+                    },
+                    "output_schema": {
+                        "type": "object",
+                        "properties": {
+                            "vendor": {"type": "string"},
+                            "amount": {"type": "number"}
+                        }
+                    }
+                }
+            ]
+        }
+    )
+
+
+def schema_response(
+    agent: str,
+    input_schema: Dict[str, Any],
+    output_schema: Dict[str, Any]
+) -> dict:
+    """
+    Create a standard schema endpoint response.
+    
+    Args:
+        agent: Agent name
+        input_schema: Input JSON schema definition
+        output_schema: Output JSON schema definition
+        
+    Returns:
+        Dictionary with success=True and schema information
+        
+    Examples:
+        >>> schema_response(
+        ...     agent="invoice-copilot",
+        ...     input_schema={"type": "object"},
+        ...     output_schema={"type": "object"}
+        ... )
+        {'success': True, 'agent': '...', 'input_schema': {...}, 'output_schema': {...}}
+    """
+    return SchemaResponse(
+        agent=agent,
+        input_schema=input_schema,
+        output_schema=output_schema
     ).model_dump()
+
+
+class InfoResponse(BaseModel):
+    """
+    Standard agent info endpoint response model.
+    
+    Attributes:
+        success: Always True for success responses
+        agent: Agent configuration details
+        auth_enabled: Whether authentication is enabled
+        version: Agent version
+        metadata: Optional additional metadata
+        
+    Examples:
+        >>> response = InfoResponse(
+        ...     agent={"name": "invoice-copilot", "framework": "langgraph"},
+        ...     auth_enabled=True,
+        ...     version="1.0.0"
+        ... )
+    """
+    success: bool = True
+    agent: Dict[str, Any]
+    auth_enabled: bool
+    version: str
+    metadata: Optional[Dict[str, Any]] = None
+    
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "success": True,
+                    "agent": {
+                        "name": "invoice-copilot",
+                        "description": "Extracts invoice data",
+                        "framework": "langgraph",
+                        "mode": "entrypoint",
+                        "target": "app.graph:build_graph"
+                    },
+                    "auth_enabled": True,
+                    "version": "1.0.0",
+                    "metadata": {
+                        "author": "Acme Corp",
+                        "tags": ["invoice", "extraction"]
+                    }
+                }
+            ]
+        }
+    )
+
+
+def info_response(
+    agent: Dict[str, Any],
+    auth_enabled: bool,
+    version: str,
+    metadata: Optional[Dict[str, Any]] = None
+) -> dict:
+    """
+    Create a standard agent info response.
+    
+    Args:
+        agent: Agent configuration dictionary
+        auth_enabled: Whether authentication is enabled
+        version: Agent version
+        metadata: Optional additional metadata
+        
+    Returns:
+        Dictionary with success=True and agent information
+        
+    Examples:
+        >>> info_response(
+        ...     agent={"name": "invoice-copilot", "framework": "langgraph"},
+        ...     auth_enabled=True,
+        ...     version="1.0.0"
+        ... )
+        {'success': True, 'agent': {...}, 'auth_enabled': True, 'version': '1.0.0'}
+    """
+    return InfoResponse(
+        agent=agent,
+        auth_enabled=auth_enabled,
+        version=version,
+        metadata=metadata
+    ).model_dump(exclude_none=True)
 
