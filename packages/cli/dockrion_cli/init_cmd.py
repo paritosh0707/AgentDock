@@ -3,27 +3,54 @@ import typer
 from pathlib import Path
 from .utils import console, success, error, info, warning, confirm_action
 
+from dockrion_schema import (
+    DockSpec,
+    AgentConfig,
+    IOSchema,
+    IOSubSchema,
+    ExposeConfig,
+    to_yaml_string,
+)
+
 app = typer.Typer()
 
-DOCKFILE_TEMPLATE = '''version: "1.0"
-agent:
-  name: {name}
-  description: "{description}"
-  entrypoint: app.main:build_agent
-  framework: langgraph
-io_schema:
-  input:
-    type: object
-    properties:
-      text: {{ type: string }}
-  output:
-    type: object
-    properties:
-      result: {{ type: string }}
-expose:
-  port: 8080
-  host: "0.0.0.0"
-'''
+
+def generate_dockfile_template(name: str) -> str:
+    """Generate a Dockfile template using schema models.
+    
+    This ensures the template is always in sync with the schema definition
+    and produces valid, validated output.
+    
+    Args:
+        name: Agent name (lowercase with hyphens)
+        
+    Returns:
+        YAML string representation of the Dockfile template
+    """
+    spec = DockSpec(
+        version="1.0",
+        agent=AgentConfig(
+            name=name,
+            description=f"dockrion agent: {name}",
+            entrypoint="app.main:build_agent",
+            framework="langgraph",
+        ),
+        io_schema=IOSchema(
+            input=IOSubSchema(
+                type="object",
+                properties={"text": {"type": "string"}},
+            ),
+            output=IOSubSchema(
+                type="object",
+                properties={"result": {"type": "string"}},
+            ),
+        ),
+        expose=ExposeConfig(
+            port=8080,
+            host="0.0.0.0",
+        ),
+    )
+    return to_yaml_string(spec)
 
 
 @app.command(name="init")
@@ -71,11 +98,8 @@ def init(
         # Create parent directory if needed
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        # Generate template
-        content = DOCKFILE_TEMPLATE.format(
-            name=name,
-            description=f"dockrion agent: {name}"
-        )
+        # Generate template using schema models
+        content = generate_dockfile_template(name)
         
         # Write file
         output_path.write_text(content)
