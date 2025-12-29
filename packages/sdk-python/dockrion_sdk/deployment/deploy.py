@@ -25,7 +25,7 @@ from ..utils.package_manager import (
     install_requirements,
     print_uv_setup_instructions,
 )
-from ..utils.workspace import find_workspace_root, get_relative_agent_path
+from ..utils.workspace import detect_local_packages, find_workspace_root, get_relative_agent_path
 from .docker import check_docker_available, docker_build
 from .runtime_gen import ensure_runtime_dir, write_runtime_files
 
@@ -36,51 +36,6 @@ logger = get_logger(__name__)
 # ============================================================================
 
 DOCKRION_IMAGE_PREFIX = "dockrion"
-
-# Dockrion packages that should be installed in Docker (in dependency order)
-DOCKRION_PACKAGES = [
-    ("dockrion-common", "common-py"),
-    ("dockrion-schema", "schema"),
-    ("dockrion-adapters", "adapters"),
-    ("dockrion-policy", "policy-engine"),
-    ("dockrion-telemetry", "telemetry"),
-    ("dockrion-runtime", "runtime"),
-]
-
-
-# ============================================================================
-# Helper Functions
-# ============================================================================
-
-
-def _detect_local_packages(workspace_root: Path) -> Optional[list]:
-    """
-    Detect local Dockrion packages in the workspace.
-
-    Args:
-        workspace_root: Root of the workspace/monorepo
-
-    Returns:
-        List of package dicts with 'name' and 'path', or None if no packages found
-    """
-    packages_dir = workspace_root / "packages"
-    if not packages_dir.exists():
-        return None
-
-    local_packages = []
-    for pkg_name, dir_name in DOCKRION_PACKAGES:
-        pkg_path = packages_dir / dir_name
-        # Check if it's a valid Python package (has pyproject.toml or setup.py)
-        if pkg_path.exists() and (
-            (pkg_path / "pyproject.toml").exists() or (pkg_path / "setup.py").exists()
-        ):
-            local_packages.append({
-                "name": dir_name,
-                "path": f"packages/{dir_name}",  # Relative to workspace root
-            })
-            logger.debug(f"Found local package: {pkg_name} at packages/{dir_name}")
-
-    return local_packages if local_packages else None
 
 
 # ============================================================================
@@ -196,7 +151,7 @@ def deploy(
 
     if dev_mode and workspace_root:
         # Detect local Dockrion packages in the workspace
-        local_packages = _detect_local_packages(workspace_root)
+        local_packages = detect_local_packages(workspace_root)
         if local_packages:
             logger.info(f"Development mode: Found {len(local_packages)} local packages to install")
         else:
