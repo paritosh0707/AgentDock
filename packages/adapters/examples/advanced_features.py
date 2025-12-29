@@ -16,11 +16,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dockrion_adapters import (
-    LangGraphAdapter,
-    AdapterLoadError,
     InvalidAgentError,
+    LangGraphAdapter,
 )
-
 
 print("=" * 70)
 print("dockrion ADAPTERS - ADVANCED FEATURES DEMO")
@@ -34,19 +32,24 @@ print()
 print("📋 DEMO 1: Validation Modes")
 print("-" * 70)
 
+
 # Create mock agent for demonstration
 def build_demo_agent():
     """Mock agent for demonstration"""
+
     class DemoAgent:
         def invoke(self, payload: dict, config: dict = None) -> dict:
             return {
                 "output": f"Processed: {payload.get('input')}",
-                "config_used": config is not None
+                "config_used": config is not None,
             }
+
     return DemoAgent()
+
 
 # Save mock agent to temporary module
 import types
+
 demo_module = types.ModuleType("demo_agent_module")
 demo_module.build_demo_agent = build_demo_agent
 sys.modules["demo_agent_module"] = demo_module
@@ -57,7 +60,7 @@ adapter_duck = LangGraphAdapter()
 adapter_duck.load("demo_agent_module:build_demo_agent")
 
 metadata = adapter_duck.get_metadata()
-print(f"✅ Loaded successfully")
+print("✅ Loaded successfully")
 print(f"   Strict validation: {metadata['strict_validation']}")
 print(f"   Agent type: {metadata['agent_type']}")
 print(f"   Is LangGraph type: {metadata['is_langgraph_type']}")
@@ -69,14 +72,14 @@ print("-" * 70)
 try:
     adapter_strict = LangGraphAdapter(strict_validation=True)
     adapter_strict.load("demo_agent_module:build_demo_agent")
-    print(f"✅ Loaded successfully")
+    print("✅ Loaded successfully")
 except InvalidAgentError as e:
-    print(f"❌ Validation failed (expected with mock agents)")
+    print("❌ Validation failed (expected with mock agents)")
     print(f"   Error: {str(e)[:80]}...")
-except Exception as e:
+except Exception:
     # LangGraph not installed - falls back to duck typing
-    print(f"⚠️  LangGraph not installed - fell back to duck typing")
-    print(f"   This is expected behavior!")
+    print("⚠️  LangGraph not installed - fell back to duck typing")
+    print("   This is expected behavior!")
 
 print()
 input("Press Enter to continue to Demo 2...\n")
@@ -89,38 +92,41 @@ print("=" * 70)
 print("📋 DEMO 2: Config Parameter Support")
 print("-" * 70)
 
+
 # Create stateful agent
 def build_stateful_agent():
     """Agent that supports state persistence via config"""
+
     class StatefulAgent:
         def __init__(self):
             self.conversations = {}
-        
+
         def invoke(self, payload: dict, config: dict = None) -> dict:
             thread_id = config.get("thread_id") if config else None
             query = payload.get("query", "")
-            
+
             if thread_id:
                 # Initialize conversation if new
                 if thread_id not in self.conversations:
                     self.conversations[thread_id] = []
-                
+
                 # Add to history
                 self.conversations[thread_id].append(query)
-                
+
                 return {
                     "response": f"Understood: {query}",
                     "turn": len(self.conversations[thread_id]),
-                    "history": self.conversations[thread_id].copy()
+                    "history": self.conversations[thread_id].copy(),
                 }
             else:
                 return {
                     "response": f"Processed: {query}",
                     "turn": 1,
-                    "note": "No memory - no thread_id provided"
+                    "note": "No memory - no thread_id provided",
                 }
-    
+
     return StatefulAgent()
+
 
 # Register stateful agent
 stateful_module = types.ModuleType("stateful_agent_module")
@@ -133,7 +139,7 @@ adapter = LangGraphAdapter()
 adapter.load("stateful_agent_module:build_stateful_agent")
 
 metadata = adapter.get_metadata()
-print(f"✅ Agent loaded")
+print("✅ Agent loaded")
 print(f"   Supports config: {metadata['supports_config']}")
 print(f"   Agent type: {metadata['agent_type']}")
 print()
@@ -154,11 +160,8 @@ print()
 
 # Turn 1
 print("🔵 Turn 1:")
-result1 = adapter.invoke(
-    {"query": "My name is Alice"},
-    config={"thread_id": "user-123"}
-)
-print(f"   Query: 'My name is Alice'")
+result1 = adapter.invoke({"query": "My name is Alice"}, config={"thread_id": "user-123"})
+print("   Query: 'My name is Alice'")
 print(f"   Response: {result1['response']}")
 print(f"   Turn: {result1['turn']}")
 print(f"   History: {result1['history']}")
@@ -166,11 +169,8 @@ print()
 
 # Turn 2
 print("🔵 Turn 2 (same thread):")
-result2 = adapter.invoke(
-    {"query": "What is my name?"},
-    config={"thread_id": "user-123"}
-)
-print(f"   Query: 'What is my name?'")
+result2 = adapter.invoke({"query": "What is my name?"}, config={"thread_id": "user-123"})
+print("   Query: 'What is my name?'")
 print(f"   Response: {result2['response']}")
 print(f"   Turn: {result2['turn']}")
 print(f"   History: {result2['history']}")
@@ -178,11 +178,8 @@ print()
 
 # Turn 3
 print("🔵 Turn 3 (same thread):")
-result3 = adapter.invoke(
-    {"query": "I like Python programming"},
-    config={"thread_id": "user-123"}
-)
-print(f"   Query: 'I like Python programming'")
+result3 = adapter.invoke({"query": "I like Python programming"}, config={"thread_id": "user-123"})
+print("   Query: 'I like Python programming'")
 print(f"   Response: {result3['response']}")
 print(f"   Turn: {result3['turn']}")
 print(f"   History: {result3['history']}")
@@ -190,15 +187,12 @@ print()
 
 print("4️⃣  New Conversation (Different thread_id)")
 print("-" * 70)
-result4 = adapter.invoke(
-    {"query": "Hello, I'm Bob"},
-    config={"thread_id": "user-456"}
-)
-print(f"   Query: 'Hello, I'm Bob'")
+result4 = adapter.invoke({"query": "Hello, I'm Bob"}, config={"thread_id": "user-456"})
+print("   Query: 'Hello, I'm Bob'")
 print(f"   Response: {result4['response']}")
 print(f"   Turn: {result4['turn']}")
 print(f"   History: {result4['history']}")
-print(f"   ✅ New conversation - independent state!")
+print("   ✅ New conversation - independent state!")
 print()
 
 input("Press Enter to continue to Demo 3...\n")
@@ -211,24 +205,28 @@ print("=" * 70)
 print("📋 DEMO 3: Automatic Signature Detection")
 print("-" * 70)
 
+
 # Create agent WITHOUT config support
 def build_simple_no_config():
     """Agent that doesn't support config"""
+
     class SimpleAgent:
         def invoke(self, payload: dict) -> dict:  # No config parameter
             return {"result": "simple response"}
+
     return SimpleAgent()
+
 
 # Create agent WITH config support
 def build_with_config():
     """Agent that supports config"""
+
     class ConfigAgent:
         def invoke(self, payload: dict, config: dict = None) -> dict:
-            return {
-                "result": "config-aware response",
-                "config_received": config is not None
-            }
+            return {"result": "config-aware response", "config_received": config is not None}
+
     return ConfigAgent()
+
 
 # Register agents
 simple_module = types.ModuleType("simple_module")
@@ -247,17 +245,14 @@ adapter1.load("simple_module:build_simple_no_config")
 meta1 = adapter1.get_metadata()
 print(f"Agent type: {meta1['agent_type']}")
 print(f"Supports config: {meta1['supports_config']}")
-print(f"✅ Signature correctly detected!")
+print("✅ Signature correctly detected!")
 print()
 
 # Try to use config (should be ignored gracefully)
 print("   Attempting to use config (should be ignored)...")
-result = adapter1.invoke(
-    {"input": "test"},
-    config={"thread_id": "123"}
-)
+result = adapter1.invoke({"input": "test"}, config={"thread_id": "123"})
 print(f"   Result: {result}")
-print(f"   ⚠️  Config was ignored (as expected)")
+print("   ⚠️  Config was ignored (as expected)")
 print()
 
 print("2️⃣  Agent WITH Config Parameter")
@@ -268,17 +263,14 @@ adapter2.load("config_module:build_with_config")
 meta2 = adapter2.get_metadata()
 print(f"Agent type: {meta2['agent_type']}")
 print(f"Supports config: {meta2['supports_config']}")
-print(f"✅ Signature correctly detected!")
+print("✅ Signature correctly detected!")
 print()
 
 # Use config (should work)
 print("   Using config...")
-result = adapter2.invoke(
-    {"input": "test"},
-    config={"thread_id": "123"}
-)
+result = adapter2.invoke({"input": "test"}, config={"thread_id": "123"})
 print(f"   Result: {result}")
-print(f"   ✅ Config was used!")
+print("   ✅ Config was used!")
 print()
 
 input("Press Enter to continue to Demo 4...\n")
@@ -313,12 +305,16 @@ print("-" * 70)
 print("\n1️⃣  Invalid Agent (No invoke method)")
 print("-" * 70)
 
+
 def build_invalid_agent():
     """Agent without invoke method"""
+
     class InvalidAgent:
         def process(self, payload):  # Wrong method name
             return {"result": "test"}
+
     return InvalidAgent()
+
 
 invalid_module = types.ModuleType("invalid_module")
 invalid_module.build_invalid_agent = build_invalid_agent
@@ -328,9 +324,9 @@ try:
     adapter = LangGraphAdapter()
     adapter.load("invalid_module:build_invalid_agent")
 except InvalidAgentError as e:
-    print(f"❌ Caught InvalidAgentError (expected)")
+    print("❌ Caught InvalidAgentError (expected)")
     print(f"   Error: {str(e)[:100]}...")
-    print(f"   ✅ Error message is helpful!")
+    print("   ✅ Error message is helpful!")
 print()
 
 print("=" * 70)
@@ -350,4 +346,3 @@ print("  - Check README.md for complete API reference")
 print("  - See test_langgraph_adapter.py for more examples")
 print("  - Try with real LangGraph agents!")
 print()
-

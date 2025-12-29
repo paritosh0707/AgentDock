@@ -21,16 +21,12 @@ logger = get_logger(__name__)
 def check_uv_available() -> bool:
     """
     Check if uv package manager is available.
-    
+
     Returns:
         True if uv is available, False otherwise
     """
     try:
-        subprocess.check_output(
-            ["uv", "--version"],
-            stderr=subprocess.STDOUT,
-            text=True
-        )
+        subprocess.check_output(["uv", "--version"], stderr=subprocess.STDOUT, text=True)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
@@ -57,29 +53,26 @@ def print_uv_setup_instructions() -> None:
     print("=" * 70 + "\n")
 
 
-def install_requirements(
-    requirements_dir: Path,
-    use_uv: bool = True
-) -> None:
+def install_requirements(requirements_dir: Path, use_uv: bool = True) -> None:
     """
     Install dependencies from requirements.txt.
-    
+
     Args:
         requirements_dir: Directory containing requirements.txt
         use_uv: Try to use uv if available (falls back to pip)
-        
+
     Raises:
         DockrionError: If installation fails
     """
     uv_available = check_uv_available() if use_uv else False
-    
+
     if uv_available:
         logger.info("  Using uv package manager (fast!)...")
         try:
             subprocess.check_call(
                 ["uv", "pip", "install", "-r", "requirements.txt", "-q"],
                 cwd=str(requirements_dir),
-                stdout=subprocess.DEVNULL
+                stdout=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
             raise DockrionError(f"Failed to install dependencies with uv: {str(e)}")
@@ -91,7 +84,7 @@ def install_requirements(
             subprocess.check_call(
                 [sys.executable, "-m", "pip", "install", "-r", "requirements.txt", "-q"],
                 cwd=str(requirements_dir),
-                stdout=subprocess.DEVNULL
+                stdout=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
             raise DockrionError(f"Failed to install dependencies with pip: {str(e)}")
@@ -102,4 +95,3 @@ __all__ = [
     "print_uv_setup_instructions",
     "install_requirements",
 ]
-

@@ -12,58 +12,58 @@ Design Principles:
 
 Usage:
     from dockrion_schema import DockSpec
-    
+
     # SDK passes parsed dict to schema for validation
     data = {"version": "1.0", "agent": {...}, ...}
     spec = DockSpec.model_validate(data)
 """
 
 import re
-
-from pydantic import BaseModel, ConfigDict, field_validator, model_validator
-from typing import Optional, Literal, Dict, List, Any
-from typing_extensions import Self
+from typing import Any, Dict, List, Literal, Optional
 
 # Import validation utilities and constants from common package
 from dockrion_common import (
-    ValidationError,
-    SUPPORTED_FRAMEWORKS,
-    SUPPORTED_AUTH_MODES,
-    SUPPORTED_STREAMING,
     LOG_LEVELS,
     PERMISSIONS,
+    SUPPORTED_AUTH_MODES,
     SUPPORTED_DOCKFILE_VERSIONS,
+    SUPPORTED_FRAMEWORKS,
+    SUPPORTED_STREAMING,
     RuntimeDefaults,
+    ValidationError,
+    parse_rate_limit,
+    validate_agent_name,
     validate_entrypoint,
     validate_handler,
-    validate_agent_name,
     validate_port,
-    parse_rate_limit,
 )
-
+from pydantic import BaseModel, ConfigDict, field_validator, model_validator
+from typing_extensions import Self
 
 # =============================================================================
 # I/O SCHEMA MODELS
 # =============================================================================
 
+
 class IOSubSchema(BaseModel):
     """
     JSON Schema definition for input or output.
-    
+
     Defines the structure of data that agents receive or return.
     Supports basic JSON Schema types: object, string, number, integer, boolean, array.
-    
+
     Note: Properties should be valid JSON Schema definitions. Nested objects
     and arrays are supported through recursive schema definitions.
     """
+
     type: str = "object"  # Validated against JSON_SCHEMA_TYPES
     properties: Dict[str, Any] = {}  # Can contain nested schemas
     required: List[str] = []
     items: Optional[Dict[str, Any]] = None  # For array types
     description: Optional[str] = None
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("type")
     @classmethod
     def validate_type(cls, v: str) -> str:
@@ -76,61 +76,69 @@ class IOSubSchema(BaseModel):
                 f"Supported types: {', '.join(SUPPORTED_TYPES)}"
             )
         return v
-    
+
     @field_validator("properties")
     @classmethod
     def validate_properties(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         """Validate properties are valid JSON Schema definitions"""
         if not isinstance(v, dict):
             raise ValidationError("properties must be a dictionary")
-        
+
         # Basic validation: each property should have a type
         for prop_name, prop_schema in v.items():
             if not isinstance(prop_schema, dict):
                 raise ValidationError(
                     f"Property '{prop_name}' must be a JSON Schema object (dict), got {type(prop_schema).__name__}"
                 )
-            
+
             # Validate property name is not empty
             if not prop_name or not prop_name.strip():
                 raise ValidationError("Property names cannot be empty or whitespace")
-            
+
             # If property has a type, validate it's supported
             if "type" in prop_schema:
                 prop_type = prop_schema["type"]
-                SUPPORTED_TYPES = ["object", "string", "number", "integer", "boolean", "array", "null"]
+                SUPPORTED_TYPES = [
+                    "object",
+                    "string",
+                    "number",
+                    "integer",
+                    "boolean",
+                    "array",
+                    "null",
+                ]
                 if prop_type not in SUPPORTED_TYPES:
                     raise ValidationError(
                         f"Property '{prop_name}' has unsupported type: '{prop_type}'. "
                         f"Supported types: {', '.join(SUPPORTED_TYPES)}"
                     )
-                
+
                 # If type is array, should have items
                 if prop_type == "array" and "items" not in prop_schema:
                     raise ValidationError(
                         f"Property '{prop_name}' is type 'array' but missing 'items' definition"
                     )
-        
+
         return v
-    
+
     @field_validator("required")
     @classmethod
     def validate_required_fields(cls, v: List[str], info) -> List[str]:
         """Validate required fields exist in properties"""
         if not isinstance(v, list):
             raise ValidationError("required must be a list")
-        
+
         # Check for duplicates
         if len(v) != len(set(v)):
             duplicates = [item for item in v if v.count(item) > 1]
             raise ValidationError(f"Duplicate fields in required list: {duplicates}")
-        
+
         # Note: We can't validate against properties here because properties
         # might not be set yet during validation. This will be checked in
         # model_validator if needed.
-        
+
         return v
-    
+
     @model_validator(mode="after")
     def validate_required_in_properties(self) -> Self:
         """Validate all required fields are defined in properties"""
@@ -144,7 +152,7 @@ class IOSubSchema(BaseModel):
                             f"Available properties: {', '.join(self.properties.keys())}"
                         )
         return self
-    
+
     @model_validator(mode="after")
     def validate_array_has_items(self) -> Self:
         """Validate array types have items definition"""
@@ -158,13 +166,14 @@ class IOSubSchema(BaseModel):
 class IOSchema(BaseModel):
     """
     Input/Output schema for agent invocation.
-    
+
     Defines the contract for what the agent accepts and returns.
     Runtime uses this to validate requests and format responses.
     """
+
     input: Optional[IOSubSchema] = None
     output: Optional[IOSubSchema] = None
-    
+
     model_config = ConfigDict(extra="allow")
 
 
@@ -172,85 +181,87 @@ class IOSchema(BaseModel):
 # AGENT CONFIGURATION
 # =============================================================================
 
+
 class AgentConfig(BaseModel):
     """
     Agent metadata and code location.
-    
+
     Supports two invocation modes:
-    
+
     1. **Entrypoint Mode** (Framework Agents):
        - Uses `entrypoint` field pointing to a factory function
        - Factory returns an agent object with `.invoke()` method
        - Requires `framework` field (langgraph, langchain, etc.)
-       
+
     2. **Handler Mode** (Service Functions):
        - Uses `handler` field pointing to a direct callable
        - Callable receives payload dict, returns response dict
        - Framework defaults to "custom"
-    
+
     At least one of `entrypoint` or `handler` must be provided.
     If both are provided, `handler` takes precedence for invocation.
-    
+
     Examples:
         # Entrypoint mode (LangGraph agent)
         agent:
           name: my-agent
           entrypoint: app.graph:build_graph
           framework: langgraph
-        
+
         # Handler mode (custom service)
         agent:
           name: my-service
           handler: app.service:process_request
           framework: custom  # optional, defaults to custom
     """
+
     name: str
     description: Optional[str] = None
-    
+
     # Entrypoint mode: factory function returning agent with .invoke()
     entrypoint: Optional[str] = None
-    
+
     # Handler mode: direct callable function(payload) -> response
     handler: Optional[str] = None
-    
+
     # Framework (required for entrypoint, defaults to "custom" for handler)
     framework: Optional[str] = None
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("name")
     @classmethod
     def validate_name_format(cls, v: str) -> str:
         """Validate agent name format (lowercase, alphanumeric, hyphens)"""
         validate_agent_name(v)
         return v
-    
+
     @field_validator("entrypoint")
     @classmethod
     def validate_entrypoint_format(cls, v: Optional[str]) -> Optional[str]:
         """
         Validate entrypoint format and prevent code injection.
-        
+
         Format: 'module.path:callable'
         Prevents: os.system:eval, ../../../etc/passwd:read
         """
         if v is not None:
             validate_entrypoint(v)
         return v
-    
+
     @field_validator("handler")
     @classmethod
     def validate_handler_format(cls, v: Optional[str]) -> Optional[str]:
         """
         Validate handler format.
-        
+
         Format: 'module.path:callable'
         Handler must be a callable: def handler(payload: dict) -> dict
         """
         if v is not None:
             validate_handler(v)
         return v
-    
+
     @field_validator("framework")
     @classmethod
     def validate_framework_supported(cls, v: Optional[str]) -> Optional[str]:
@@ -261,7 +272,7 @@ class AgentConfig(BaseModel):
                 f"Supported frameworks: {', '.join(SUPPORTED_FRAMEWORKS)}"
             )
         return v
-    
+
     @model_validator(mode="after")
     def validate_entrypoint_or_handler(self) -> Self:
         """Ensure at least one of entrypoint or handler is provided."""
@@ -270,21 +281,21 @@ class AgentConfig(BaseModel):
                 "Agent must specify either 'entrypoint' (for framework agents) "
                 "or 'handler' (for service functions). Neither was provided."
             )
-        
+
         # Set default framework based on mode
         # Handler takes precedence when both are provided
         if self.framework is None:
             if self.handler:
                 # Handler mode (or both specified): default to "custom"
                 # When both are provided, handler takes precedence for invocation
-                object.__setattr__(self, 'framework', 'custom')
+                object.__setattr__(self, "framework", "custom")
             else:
                 # Entrypoint-only mode requires explicit framework
                 raise ValidationError(
                     "Agent with 'entrypoint' must specify 'framework'. "
                     f"Supported frameworks: {', '.join(SUPPORTED_FRAMEWORKS)}"
                 )
-        
+
         return self
 
 
@@ -292,33 +303,36 @@ class AgentConfig(BaseModel):
 # POLICY MODELS (Future - Phase 2)
 # =============================================================================
 
+
 class ToolPolicy(BaseModel):
     """
     Tool access control policy.
-    
+
     NOTE: Policy enforcement happens in policy-engine package.
     Schema only validates the configuration.
     """
+
     allowed: List[str] = []
     deny_by_default: bool = True
-    
+
     model_config = ConfigDict(extra="allow")
 
 
 class SafetyPolicy(BaseModel):
     """
     Output safety and content filtering policy.
-    
+
     NOTE: Redaction and filtering happen in policy-engine package.
     Schema only validates the configuration.
     """
+
     redact_patterns: List[str] = []
     max_output_chars: Optional[int] = None
     block_prompt_injection: bool = True
     halt_on_violation: bool = False
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("max_output_chars")
     @classmethod
     def validate_max_output_positive(cls, v: Optional[int]) -> Optional[int]:
@@ -331,13 +345,14 @@ class SafetyPolicy(BaseModel):
 class Policies(BaseModel):
     """
     Security and safety policies.
-    
+
     NOTE: These are optional in MVP. When policy-engine service is ready,
     these will be enforced at runtime.
     """
+
     tools: Optional[ToolPolicy] = None
     safety: Optional[SafetyPolicy] = None
-    
+
     model_config = ConfigDict(extra="allow")
 
 
@@ -345,13 +360,14 @@ class Policies(BaseModel):
 # AUTH CONFIGURATION
 # =============================================================================
 
+
 class RoleConfig(BaseModel):
     """
     Role-based access control configuration.
-    
+
     Defines a named role with associated permissions.
     Roles can be assigned to API keys or extracted from JWT claims.
-    
+
     Example:
         ```yaml
         roles:
@@ -361,11 +377,12 @@ class RoleConfig(BaseModel):
             permissions: [invoke, view_metrics]
         ```
     """
+
     name: str
     permissions: List[str]
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("permissions")
     @classmethod
     def validate_permissions(cls, v: List[str]) -> List[str]:
@@ -373,8 +390,7 @@ class RoleConfig(BaseModel):
         for perm in v:
             if perm not in PERMISSIONS:
                 raise ValidationError(
-                    f"Unknown permission: '{perm}'. "
-                    f"Valid permissions: {', '.join(PERMISSIONS)}"
+                    f"Unknown permission: '{perm}'. Valid permissions: {', '.join(PERMISSIONS)}"
                 )
         return v
 
@@ -382,18 +398,18 @@ class RoleConfig(BaseModel):
 class ApiKeysConfig(BaseModel):
     """
     API key authentication configuration.
-    
+
     Supports two modes:
     - Single key: One key from env_var
     - Multi-key: Multiple keys matching prefix pattern
-    
+
     Example (single key):
         ```yaml
         api_keys:
           env_var: MY_AGENT_KEY
           header: X-API-Key
         ```
-    
+
     Example (multi-key):
         ```yaml
         api_keys:
@@ -401,20 +417,21 @@ class ApiKeysConfig(BaseModel):
           header: X-API-Key
         ```
     """
+
     # Key source
     env_var: str = "DOCKRION_API_KEY"
     prefix: Optional[str] = None  # For multi-key mode
-    
+
     # Request config
     header: str = "X-API-Key"
     allow_bearer: bool = True  # Allow Authorization: Bearer <key>
-    
+
     # Key management (informational)
     enabled: bool = True
     rotation_days: Optional[int] = 30
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("rotation_days")
     @classmethod
     def validate_rotation_days_positive(cls, v: Optional[int]) -> Optional[int]:
@@ -422,7 +439,7 @@ class ApiKeysConfig(BaseModel):
         if v is not None and v <= 0:
             raise ValidationError(f"rotation_days must be positive. Got: {v}")
         return v
-    
+
     @field_validator("header")
     @classmethod
     def validate_header_name(cls, v: str) -> str:
@@ -435,10 +452,10 @@ class ApiKeysConfig(BaseModel):
 class JWTClaimsConfig(BaseModel):
     """
     JWT claim mapping configuration.
-    
+
     Maps JWT claims to identity context fields.
     Supports nested claim paths with dot notation.
-    
+
     Example:
         ```yaml
         claims:
@@ -448,6 +465,7 @@ class JWTClaimsConfig(BaseModel):
           tenant_id: org.tenant_id  # Nested claim
         ```
     """
+
     user_id: str = "sub"
     email: str = "email"
     name: str = "name"
@@ -455,16 +473,16 @@ class JWTClaimsConfig(BaseModel):
     permissions: str = "permissions"
     scopes: str = "scope"
     tenant_id: Optional[str] = None
-    
+
     model_config = ConfigDict(extra="allow")
 
 
 class JWTConfig(BaseModel):
     """
     JWT authentication configuration.
-    
+
     Supports JWKS (recommended) or static public key.
-    
+
     Example (JWKS - recommended):
         ```yaml
         jwt:
@@ -475,7 +493,7 @@ class JWTConfig(BaseModel):
             user_id: sub
             roles: permissions
         ```
-    
+
     Example (static key):
         ```yaml
         jwt:
@@ -484,34 +502,44 @@ class JWTConfig(BaseModel):
           audience: my-agent-api
         ```
     """
+
     # Key source (one required)
     jwks_url: Optional[str] = None
     public_key_env: Optional[str] = None
-    
+
     # Validation
     issuer: Optional[str] = None
     audience: Optional[str] = None
     algorithms: List[str] = ["RS256"]
     leeway_seconds: int = 30  # Clock skew tolerance
-    
+
     # Claim mappings
     claims: Optional[JWTClaimsConfig] = None
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("algorithms")
     @classmethod
     def validate_algorithms(cls, v: List[str]) -> List[str]:
         """Validate algorithms are supported"""
-        supported = ["RS256", "RS384", "RS512", "ES256", "ES384", "ES512", "HS256", "HS384", "HS512"]
+        supported = [
+            "RS256",
+            "RS384",
+            "RS512",
+            "ES256",
+            "ES384",
+            "ES512",
+            "HS256",
+            "HS384",
+            "HS512",
+        ]
         for alg in v:
             if alg not in supported:
                 raise ValidationError(
-                    f"Unsupported algorithm: '{alg}'. "
-                    f"Supported: {', '.join(supported)}"
+                    f"Unsupported algorithm: '{alg}'. Supported: {', '.join(supported)}"
                 )
         return v
-    
+
     @field_validator("leeway_seconds")
     @classmethod
     def validate_leeway(cls, v: int) -> int:
@@ -524,9 +552,9 @@ class JWTConfig(BaseModel):
 class OAuth2Config(BaseModel):
     """
     OAuth2 token introspection configuration.
-    
+
     Used for validating opaque tokens by calling the authorization server.
-    
+
     Example:
         ```yaml
         oauth2:
@@ -535,33 +563,34 @@ class OAuth2Config(BaseModel):
           client_secret_env: AGENT_CLIENT_SECRET
           required_scopes: [agent:invoke]
         ```
-    
+
     Note: This is a future feature planned for Phase 2.
     """
+
     introspection_url: Optional[str] = None
     client_id_env: Optional[str] = None
     client_secret_env: Optional[str] = None
     required_scopes: List[str] = []
-    
+
     model_config = ConfigDict(extra="allow")
 
 
 class AuthConfig(BaseModel):
     """
     Authentication and authorization configuration.
-    
+
     Supports multiple authentication modes:
     - **none**: No authentication (development/trusted networks)
     - **api_key**: API key authentication (single or multi-key)
     - **jwt**: JWT with JWKS support (enterprise SSO)
     - **oauth2**: OAuth2 token introspection (future)
-    
+
     Example (API Key - simple):
         ```yaml
         auth:
           mode: api_key
         ```
-    
+
     Example (JWT - enterprise):
         ```yaml
         auth:
@@ -583,33 +612,33 @@ class AuthConfig(BaseModel):
             operator: "100/minute"
         ```
     """
+
     # Auth mode
     mode: str = "api_key"
-    
+
     # Mode-specific configuration
     api_keys: Optional[ApiKeysConfig] = None
     jwt: Optional[JWTConfig] = None
     oauth2: Optional[OAuth2Config] = None
-    
+
     # RBAC
     roles: List[RoleConfig] = []
-    
+
     # Rate limiting by role
     rate_limits: Dict[str, str] = {}
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("mode")
     @classmethod
     def validate_auth_mode_supported(cls, v: str) -> str:
         """Validate auth mode is supported (uses SUPPORTED_AUTH_MODES from common)"""
         if v not in SUPPORTED_AUTH_MODES:
             raise ValidationError(
-                f"Unsupported auth mode: '{v}'. "
-                f"Supported modes: {', '.join(SUPPORTED_AUTH_MODES)}"
+                f"Unsupported auth mode: '{v}'. Supported modes: {', '.join(SUPPORTED_AUTH_MODES)}"
             )
         return v
-    
+
     @field_validator("rate_limits")
     @classmethod
     def validate_rate_limit_formats(cls, v: Dict[str, str]) -> Dict[str, str]:
@@ -618,9 +647,7 @@ class AuthConfig(BaseModel):
             try:
                 parse_rate_limit(limit_str)
             except ValidationError as e:
-                raise ValidationError(
-                    f"Invalid rate limit for role '{role}': {e.message}"
-                )
+                raise ValidationError(f"Invalid rate limit for role '{role}': {e.message}")
         return v
 
 
@@ -628,31 +655,32 @@ class AuthConfig(BaseModel):
 # OBSERVABILITY CONFIGURATION (Future - Phase 2)
 # =============================================================================
 
+
 class Observability(BaseModel):
     """
     Telemetry and monitoring configuration.
-    
+
     NOTE: These are optional in MVP. When telemetry is fully integrated,
     these settings control logging and metrics collection.
-    
+
     Note: log_level field uses constants from common package (LOG_LEVELS)
     as the single source of truth for validation.
     """
+
     langfuse: Optional[Dict[str, str]] = None
     tracing: bool = True
     log_level: str = "info"  # Validated against LOG_LEVELS from common
     metrics: Dict[str, bool] = {"latency": True, "tokens": True, "cost": True}
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("log_level")
     @classmethod
     def validate_log_level(cls, v: str) -> str:
         """Validate log level is recognized (uses LOG_LEVELS from common)"""
         if v not in LOG_LEVELS:
             raise ValidationError(
-                f"Invalid log level: '{v}'. "
-                f"Valid levels: {', '.join(LOG_LEVELS)}"
+                f"Invalid log level: '{v}'. Valid levels: {', '.join(LOG_LEVELS)}"
             )
         return v
 
@@ -661,30 +689,32 @@ class Observability(BaseModel):
 # EXPOSE CONFIGURATION
 # =============================================================================
 
+
 class ExposeConfig(BaseModel):
     """
     API exposure and network configuration.
-    
+
     Controls how the agent runtime exposes APIs (REST, streaming).
-    
+
     Note: All defaults use RuntimeDefaults from common package
     as the single source of truth.
     """
+
     rest: bool = True
     streaming: str = RuntimeDefaults.STREAMING
     port: int = RuntimeDefaults.PORT
     host: str = RuntimeDefaults.HOST
     cors: Optional[Dict[str, List[str]]] = None
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("port")
     @classmethod
     def validate_port_range(cls, v: int) -> int:
         """Validate port is in valid range (1-65535)"""
         validate_port(v)
         return v
-    
+
     @field_validator("streaming")
     @classmethod
     def validate_streaming_mode(cls, v: str) -> str:
@@ -695,7 +725,7 @@ class ExposeConfig(BaseModel):
                 f"Supported modes: {', '.join(SUPPORTED_STREAMING)}"
             )
         return v
-    
+
     @model_validator(mode="after")
     def validate_at_least_one_exposure(self) -> Self:
         """Validate at least REST or streaming is enabled"""
@@ -711,14 +741,15 @@ class ExposeConfig(BaseModel):
 # SECRETS CONFIGURATION
 # =============================================================================
 
+
 class SecretDefinition(BaseModel):
     """
     Definition of a secret/environment variable.
-    
+
     Used to declare what secrets an agent requires at runtime.
     This enables validation before deployment and clear documentation
     of required configuration.
-    
+
     Example:
         ```yaml
         secrets:
@@ -733,12 +764,13 @@ class SecretDefinition(BaseModel):
               default: ""
         ```
     """
+
     name: str
     description: Optional[str] = None
     default: Optional[str] = None
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
@@ -747,7 +779,7 @@ class SecretDefinition(BaseModel):
             raise ValidationError("Secret name cannot be empty")
         # Allow uppercase letters, numbers, and underscores
         # Must start with a letter or underscore
-        if not re.match(r'^[A-Z_][A-Z0-9_]*$', v):
+        if not re.match(r"^[A-Z_][A-Z0-9_]*$", v):
             raise ValidationError(
                 f"Secret name '{v}' must be uppercase with underscores "
                 f"(e.g., MY_API_KEY, OPENAI_KEY_1). "
@@ -759,12 +791,12 @@ class SecretDefinition(BaseModel):
 class SecretsConfig(BaseModel):
     """
     Configuration for required and optional secrets.
-    
+
     Secrets declared here are used for:
     - Validation before run/build to ensure required vars are set
     - Documentation of what environment variables the agent needs
     - Auto-loading from .env files with priority resolution
-    
+
     Example:
         ```yaml
         secrets:
@@ -777,11 +809,12 @@ class SecretsConfig(BaseModel):
               default: "false"
         ```
     """
+
     required: List[SecretDefinition] = []
     optional: List[SecretDefinition] = []
-    
+
     model_config = ConfigDict(extra="allow")
-    
+
     @model_validator(mode="after")
     def validate_no_duplicate_names(self) -> Self:
         """Ensure no duplicate secret names across required and optional."""
@@ -792,7 +825,7 @@ class SecretsConfig(BaseModel):
             if name in seen:
                 duplicates.append(name)
             seen.add(name)
-        
+
         if duplicates:
             raise ValidationError(
                 f"Duplicate secret names found: {', '.join(duplicates)}. "
@@ -805,16 +838,18 @@ class SecretsConfig(BaseModel):
 # METADATA
 # =============================================================================
 
+
 class Metadata(BaseModel):
     """
     Optional descriptive metadata about the agent.
-    
+
     Used for documentation and organization purposes.
     """
+
     maintainer: Optional[str] = None
     version: Optional[str] = None
     tags: List[str] = []
-    
+
     model_config = ConfigDict(extra="allow")
 
 
@@ -822,27 +857,29 @@ class Metadata(BaseModel):
 # ROOT DOCKSPEC MODEL
 # =============================================================================
 
+
 class DockSpec(BaseModel):
     """
     Root model for Dockfile v1.0 specification.
-    
+
     This is the main entry point for validating Dockfile configurations.
     All services use this model to ensure consistent validation.
-    
+
     Design:
     - Accepts unknown fields (extra="allow") for future extensibility
     - MVP fields are required/validated, future fields are accepted but not validated
     - When new services are ready, corresponding models are added and validated
-    
+
     Usage:
         # SDK passes parsed YAML dict to schema
         data = yaml.safe_load(file_content)
         spec = DockSpec.model_validate(data)
-        
+
         # Access validated fields
         agent_name = spec.agent.name
         framework = spec.agent.framework
     """
+
     version: Literal["1.0"]
     agent: AgentConfig
     io_schema: IOSchema
@@ -853,11 +890,11 @@ class DockSpec(BaseModel):
     expose: ExposeConfig
     metadata: Optional[Metadata] = None
     secrets: Optional[SecretsConfig] = None
-    
+
     # Allow unknown fields for future expansion (Phase 2+)
     # When new services are built, add their models above and make them optional
     model_config = ConfigDict(extra="allow")
-    
+
     @field_validator("version")
     @classmethod
     def validate_version_supported(cls, v: str) -> str:

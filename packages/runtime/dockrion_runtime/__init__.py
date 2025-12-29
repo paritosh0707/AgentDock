@@ -5,7 +5,7 @@ Provides the FastAPI runtime infrastructure for Dockrion agents.
 
 Usage:
     from dockrion_runtime import create_app
-    
+
     app = create_app(spec=my_spec, agent_entrypoint="app.graph:build")
 
 Authentication:
@@ -16,8 +16,7 @@ Authentication:
     )
 """
 
-from .app import create_app, RuntimeConfig
-from .metrics import RuntimeMetrics
+from .app import RuntimeConfig, create_app
 
 # Re-export key auth utilities at package level
 from .auth import (
@@ -26,6 +25,7 @@ from .auth import (
     generate_api_key,
     is_jwt_available,
 )
+from .metrics import RuntimeMetrics
 
 __version__ = "0.1.0"
 
@@ -34,11 +34,9 @@ __all__ = [
     "create_app",
     "RuntimeConfig",
     "RuntimeMetrics",
-    
     # Auth
     "AuthContext",
     "create_auth_handler",
     "generate_api_key",
     "is_jwt_available",
 ]
-

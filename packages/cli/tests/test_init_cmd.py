@@ -1,7 +1,9 @@
 """Tests for init command."""
-import pytest
+
 from pathlib import Path
+
 from typer.testing import CliRunner
+
 from dockrion_cli.main import app
 
 runner = CliRunner()
@@ -40,4 +42,3 @@ def test_init_with_force(tmp_path, monkeypatch):
     result = runner.invoke(app, ["init", "test-agent", "--force"])
     assert result.exit_code == 0
     assert "test-agent" in Path("Dockfile.yaml").read_text()
-

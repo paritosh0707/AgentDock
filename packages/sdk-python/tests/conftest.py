@@ -3,10 +3,12 @@
 This conftest.py ensures tests work for both developers (editable install)
 and users (pip installed package).
 """
+
 import os
 import sys
-import pytest
 from pathlib import Path
+
+import pytest
 
 
 def pytest_configure(config):
@@ -14,18 +16,14 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "requires_docker: marks tests that require docker"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "requires_docker: marks tests that require docker")
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_path():
     """Ensure the package root and tests directory are in the Python path.
-    
+
     This makes fixtures importable whether tests are run from:
     - The package directory (packages/sdk-python)
     - The project root (Dockrion)
@@ -33,35 +31,31 @@ def setup_test_path():
     """
     package_root = Path(__file__).parent.parent
     tests_root = Path(__file__).parent
-    
+
     # Add package root to path for local development
     package_root_str = str(package_root)
     if package_root_str not in sys.path:
         sys.path.insert(0, package_root_str)
-    
+
     # Add tests directory for fixture imports
     tests_root_str = str(tests_root)
     if tests_root_str not in sys.path:
         sys.path.insert(0, tests_root_str)
-    
+
     yield
 
 
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to handle optional dependencies and conditions."""
     import subprocess
-    
+
     # Check if Docker is available
     try:
-        result = subprocess.run(
-            ["docker", "--version"],
-            capture_output=True,
-            timeout=5
-        )
+        result = subprocess.run(["docker", "--version"], capture_output=True, timeout=5)
         has_docker = result.returncode == 0
     except (FileNotFoundError, subprocess.TimeoutExpired):
         has_docker = False
-    
+
     for item in items:
         # Skip tests marked as requires_docker if docker is not available
         if "requires_docker" in item.keywords and not has_docker:

@@ -1,18 +1,164 @@
 name: CI CLI
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'packages/cli/**'
+      - 'packages/sdk-python/**'
+      - 'packages/common-py/**'
+      - 'packages/schema/**'
+      - 'packages/adapters/**'
+      - '.github/workflows/ci-cli.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'packages/cli/**'
+      - 'packages/sdk-python/**'
+      - 'packages/common-py/**'
+      - 'packages/schema/**'
+      - 'packages/adapters/**'
+      - '.github/workflows/ci-cli.yml'
+
 jobs:
-  build-cli:
-    runs-on: ubuntu-latest
+  cli-test:
+    name: CLI Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.12"]
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - name: Install dependencies
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      
+      - name: Create virtual environment
+        run: uv venv .venv
+      
+      - name: Install packages (Unix)
+        if: runner.os != 'Windows'
         run: |
-          pip install -e packages/common-py
-          pip install -e packages/schema
-          pip install -e packages/adapters
-          pip install -e packages/sdk-python
-          pip install -e packages/cli
-      - name: Test CLI
-        run: python -m dockrion_cli.main validate --help || python -m dockrion_cli.main --help
+          source .venv/bin/activate
+          uv pip install -e packages/common-py
+          uv pip install -e packages/schema
+          uv pip install -e packages/adapters
+          uv pip install -e packages/policy-engine
+          uv pip install -e packages/telemetry
+          uv pip install -e packages/runtime
+          uv pip install -e packages/sdk-python
+          uv pip install -e packages/cli
+          uv pip install pytest pytest-mock
+      
+      - name: Test CLI commands
+        if: runner.os != 'Windows'
+        run: |
+          source .venv/bin/activate
+          # Test help commands
+          dockrion --help
+          dockrion validate --help
+          dockrion test --help
+          dockrion init --help
+          dockrion info --help
+      
+      - name: Run CLI tests
+        if: runner.os != 'Windows'
+        run: |
+          source .venv/bin/activate
+          pytest packages/cli/tests -v --tb=short
+
+  cli-integration:
+    name: CLI Integration
+    runs-on: ubuntu-latest
+    needs: cli-test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      
+      - name: Create virtual environment
+        run: uv venv .venv
+      
+      - name: Install packages
+        run: |
+          source .venv/bin/activate
+          uv pip install -e packages/common-py
+          uv pip install -e packages/schema
+          uv pip install -e packages/adapters
+          uv pip install -e packages/policy-engine
+          uv pip install -e packages/telemetry
+          uv pip install -e packages/runtime
+          uv pip install -e packages/sdk-python
+          uv pip install -e packages/cli
+      
+      - name: Test init workflow
+        run: |
+          source .venv/bin/activate
+          cd /tmp
+          dockrion init test-agent
+          cat Dockfile.yaml
+          dockrion validate Dockfile.yaml || true  # May fail due to invalid entrypoint
+      
+      - name: Test with example agent
+        run: |
+          source .venv/bin/activate
+          # Create a simple test agent
+          mkdir -p /tmp/test-project
+          cd /tmp/test-project
+          
+          # Create agent module
+          cat > agent.py << 'EOF'
+          class SimpleAgent:
+              def invoke(self, payload):
+                  return {"result": f"Processed: {payload.get('text', 'none')}"}
+          
+          def build_agent():
+              return SimpleAgent()
+          EOF
+          
+          # Create Dockfile
+          cat > Dockfile.yaml << 'EOF'
+          version: "1.0"
+          agent:
+            name: test-agent
+            entrypoint: agent:build_agent
+            framework: langgraph
+          io_schema:
+            input:
+              type: object
+              properties:
+                text: { type: string }
+            output:
+              type: object
+              properties:
+                result: { type: string }
+          expose:
+            port: 8080
+          EOF
+          
+          # Validate
+          dockrion validate Dockfile.yaml
+          
+          # Test
+          dockrion test Dockfile.yaml --payload '{"text": "hello"}'

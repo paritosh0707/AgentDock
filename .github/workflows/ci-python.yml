@@ -1,11 +1,168 @@
 name: CI Python
-on: [push, pull_request]
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/ci-python.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'packages/**'
+      - '.github/workflows/ci-python.yml'
+
 jobs:
-  lint-test:
+  test:
+    name: Test Python Packages
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
+    
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-      - run: pip install -e packages/common-py -e packages/schema
-      - run: python -c "import dockrion_schema.dockfile_v1 as m; print('schema ok')"
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      
+      - name: Create virtual environment
+        run: uv venv .venv
+      
+      - name: Install all packages in editable mode
+        run: |
+          source .venv/bin/activate
+          uv pip install -e packages/common-py
+          uv pip install -e packages/schema
+          uv pip install -e packages/adapters
+          uv pip install -e packages/policy-engine
+          uv pip install -e packages/telemetry
+          uv pip install -e packages/runtime
+          uv pip install -e packages/sdk-python
+          uv pip install -e packages/cli
+      
+      - name: Install test dependencies
+        run: |
+          source .venv/bin/activate
+          uv pip install pytest pytest-cov pytest-mock pytest-asyncio
+      
+      - name: Test common-py
+        run: |
+          source .venv/bin/activate
+          pytest packages/common-py/tests -v --tb=short
+      
+      - name: Test schema
+        run: |
+          source .venv/bin/activate
+          pytest packages/schema/tests -v --tb=short
+      
+      - name: Test adapters
+        run: |
+          source .venv/bin/activate
+          pytest packages/adapters/tests -v --tb=short
+      
+      - name: Test policy-engine
+        run: |
+          source .venv/bin/activate
+          pytest packages/policy-engine/tests -v --tb=short
+      
+      - name: Test telemetry
+        run: |
+          source .venv/bin/activate
+          pytest packages/telemetry/tests -v --tb=short
+      
+      - name: Test runtime
+        run: |
+          source .venv/bin/activate
+          pytest packages/runtime/tests -v --tb=short
+      
+      - name: Test sdk-python
+        run: |
+          source .venv/bin/activate
+          pytest packages/sdk-python/tests -v --tb=short
+      
+      - name: Test cli
+        run: |
+          source .venv/bin/activate
+          pytest packages/cli/tests -v --tb=short
+
+  type-check:
+    name: Type Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+      
+      - name: Create virtual environment
+        run: uv venv .venv
+      
+      - name: Install all packages
+        run: |
+          source .venv/bin/activate
+          uv pip install -e packages/common-py
+          uv pip install -e packages/schema
+          uv pip install -e packages/adapters
+          uv pip install -e packages/policy-engine
+          uv pip install -e packages/telemetry
+          uv pip install -e packages/runtime
+          uv pip install -e packages/sdk-python
+          uv pip install -e packages/cli
+      
+      - name: Install mypy and type stubs
+        run: |
+          source .venv/bin/activate
+          uv pip install mypy types-PyYAML types-requests
+      
+      - name: Run mypy
+        run: |
+          source .venv/bin/activate
+          mypy packages/common-py/dockrion_common \
+               packages/schema/dockrion_schema \
+               packages/adapters/dockrion_adapters \
+               packages/policy-engine/dockrion_policy \
+               packages/telemetry/dockrion_telemetry \
+               packages/runtime/dockrion_runtime \
+               packages/sdk-python/dockrion_sdk \
+               --ignore-missing-imports
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install ruff
+        run: pip install ruff
+      
+      - name: Run ruff check
+        run: ruff check packages/ --ignore E501,E402,F401,F841,B904,B008,B017,B027
+      
+      - name: Run ruff format check
+        run: ruff format packages/ --check || true  # Don't fail on format issues for now

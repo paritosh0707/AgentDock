@@ -1,12 +1,14 @@
 """dockrion CLI - Main entry point."""
+
 import typer
-from . import validate_cmd, test_cmd, build_cmd, run_cmd, logs_cmd, init_cmd, info_cmd
+
+from . import build_cmd, info_cmd, init_cmd, logs_cmd, run_cmd, test_cmd, validate_cmd
 
 app = typer.Typer(
     name="dockrion",
     help="dockrion CLI - Deploy and manage AI agents",
     no_args_is_help=True,
-    add_completion=False
+    add_completion=False,
 )
 
 # Register all commands

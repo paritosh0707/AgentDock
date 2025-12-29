@@ -1,5 +1,7 @@
 """Tests for info commands (version, doctor)."""
+
 from typer.testing import CliRunner
+
 from dockrion_cli.main import app
 
 runner = CliRunner()
@@ -18,4 +20,3 @@ def test_doctor():
     result = runner.invoke(app, ["doctor"])
     assert result.exit_code == 0
     assert "diagnostic" in result.stdout.lower() or "check" in result.stdout.lower()
-

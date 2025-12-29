@@ -3,11 +3,13 @@
 This conftest.py ensures tests work for both developers (editable install)
 and users (pip installed package).
 """
-import sys
-import os
+
 import json
-import pytest
+import os
+import sys
 from pathlib import Path
+
+import pytest
 from typer.testing import CliRunner
 
 
@@ -16,15 +18,13 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_path():
     """Ensure the package root is in the Python path.
-    
+
     This makes the package importable whether tests are run from:
     - The package directory (packages/cli)
     - The project root (Dockrion)
@@ -32,17 +32,17 @@ def setup_test_path():
     """
     package_root = Path(__file__).parent.parent
     tests_root = Path(__file__).parent
-    
+
     # Add package root to path for local development
     package_root_str = str(package_root)
     if package_root_str not in sys.path:
         sys.path.insert(0, package_root_str)
-    
+
     # Add tests directory for fixture imports
     tests_root_str = str(tests_root)
     if tests_root_str not in sys.path:
         sys.path.insert(0, tests_root_str)
-    
+
     yield
 
 
@@ -58,10 +58,10 @@ def mock_agent_module(tmp_path):
     # Create a mock_agent module in a unique temp location
     agent_dir = tmp_path / "mock_agent_pkg"
     agent_dir.mkdir()
-    
+
     # Create __init__.py
     (agent_dir / "__init__.py").write_text("")
-    
+
     # Create mock_agent.py
     mock_agent_code = '''"""Mock agent for testing."""
 from typing import Dict, Any
@@ -79,11 +79,11 @@ def build_agent():
     return MockAgent()
 '''
     (agent_dir / "agent.py").write_text(mock_agent_code)
-    
+
     # Add to path
     if str(agent_dir.parent) not in sys.path:
         sys.path.insert(0, str(agent_dir.parent))
-    
+
     return "mock_agent_pkg.agent:build_agent"
 
 

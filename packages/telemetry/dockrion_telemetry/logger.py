@@ -1,4 +1,6 @@
-import json, sys
+import json
+import sys
+
 
 def log_event(event: str, **kwargs):
     rec = {"event": event}

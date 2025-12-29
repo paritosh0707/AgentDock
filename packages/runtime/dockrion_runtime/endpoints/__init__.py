@@ -10,7 +10,6 @@ from .invoke import create_invoke_router
 
 __all__ = [
     "create_health_router",
-    "create_info_router", 
+    "create_info_router",
     "create_invoke_router",
 ]
-

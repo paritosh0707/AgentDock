@@ -1,6 +1,7 @@
 """Tests for validate command."""
-import pytest
+
 from typer.testing import CliRunner
+
 from dockrion_cli.main import app
 
 runner = CliRunner()
@@ -30,4 +31,3 @@ def test_validate_with_quiet(sample_dockfile):
     """Test validate with quiet flag."""
     result = runner.invoke(app, ["validate", sample_dockfile, "--quiet"])
     assert result.exit_code == 0
-

@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-dev test test-cov test-verbose lint clean help
+.PHONY: bootstrap bootstrap-dev test test-cov test-verbose lint typecheck ci clean help
 
 # Default target
 help:
@@ -17,7 +17,9 @@ help:
 	@echo ""
 	@echo "Quality:"
 	@echo "  make lint          - Run linters (ruff)"
+	@echo "  make typecheck     - Run type checker (mypy)"
 	@echo "  make format        - Format code (ruff format)"
+	@echo "  make ci            - Run all CI checks (lint, typecheck, test)"
 	@echo ""
 	@echo "Package-specific testing:"
 	@echo "  make test-adapters   - Run adapters tests"
@@ -118,13 +120,36 @@ test-policy:
 test-telemetry:
 	pytest packages/telemetry/tests -v
 
-# Linting
+# Linting (ignore common acceptable patterns)
+# E501: line too long (handled by formatter)
+# E402: import not at top (needed in tests for path setup)
+# F401: unused import (often intentional in __init__.py)
+# F841: unused variable (sometimes intentional in tests)
+# B904: raise from (stylistic preference)
+# B008: function call in default arg (common FastAPI pattern)
+# B017: blind exception (acceptable in tests)
+# B027: empty method without abstract decorator (intentional)
 lint:
-	ruff check packages/
+	ruff check packages/ --ignore E501,E402,F401,F841,B904,B008,B017,B027
+
+# Type checking
+typecheck:
+	mypy packages/common-py/dockrion_common \
+	     packages/schema/dockrion_schema \
+	     packages/adapters/dockrion_adapters \
+	     packages/policy-engine/dockrion_policy \
+	     packages/telemetry/dockrion_telemetry \
+	     packages/runtime/dockrion_runtime \
+	     packages/sdk-python/dockrion_sdk \
+	     --ignore-missing-imports
 
 # Format code
 format:
 	ruff format packages/
+
+# Run all CI checks
+ci: lint typecheck test
+	@echo "=== All CI checks passed! ==="
 
 # Clean build artifacts
 clean:

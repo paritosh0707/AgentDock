@@ -8,7 +8,7 @@ Modules for interacting with remote Dockrion services:
 """
 
 from .controller import ControllerClient
-from .logs import get_local_logs, tail_build_logs, stream_agent_logs
+from .logs import get_local_logs, stream_agent_logs, tail_build_logs
 
 __all__ = [
     "ControllerClient",
@@ -16,4 +16,3 @@ __all__ = [
     "tail_build_logs",
     "stream_agent_logs",
 ]
-

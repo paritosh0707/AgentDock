@@ -13,13 +13,13 @@ File reading/writing is SDK's responsibility, not schema's.
 
 Usage:
     from dockrion_schema import DockSpec, to_dict, to_yaml_string
-    
+
     # Convert model to dict
     spec_dict = to_dict(spec)
-    
+
     # Convert model to YAML string
     yaml_str = to_yaml_string(spec)
-    
+
     # SDK would then write to file:
     # with open("Dockfile.yaml", "w") as f:
     #     f.write(yaml_str)
@@ -33,22 +33,22 @@ from .dockfile_v1 import DockSpec
 def to_dict(spec: DockSpec, exclude_none: bool = True) -> Dict[str, Any]:
     """
     Convert DockSpec to plain Python dictionary.
-    
+
     This is useful for serialization, API responses, or further processing.
-    
+
     Args:
         spec: DockSpec object to convert
         exclude_none: If True, exclude fields with None values (default: True)
-        
+
     Returns:
         Plain Python dict representation of the DockSpec
-        
+
     Examples:
         >>> spec = DockSpec(...)
         >>> data = to_dict(spec)
         >>> data["agent"]["name"]
         'invoice-copilot'
-        
+
         >>> # Include None values
         >>> data = to_dict(spec, exclude_none=False)
     """
@@ -58,20 +58,20 @@ def to_dict(spec: DockSpec, exclude_none: bool = True) -> Dict[str, Any]:
 def to_yaml_string(spec: DockSpec, exclude_none: bool = True) -> str:
     """
     Serialize DockSpec to YAML string.
-    
+
     NOTE: This returns a YAML string, NOT writing to a file.
     File writing is SDK's responsibility.
-    
+
     Args:
         spec: DockSpec object to serialize
         exclude_none: If True, exclude fields with None values (default: True)
-        
+
     Returns:
         YAML string representation of the DockSpec
-        
+
     Raises:
         ImportError: If pyyaml is not installed
-        
+
     Examples:
         >>> spec = DockSpec(...)
         >>> yaml_str = to_yaml_string(spec)
@@ -82,7 +82,7 @@ def to_yaml_string(spec: DockSpec, exclude_none: bool = True) -> str:
           entrypoint: app.main:build_graph
           framework: langgraph
         ...
-        
+
         >>> # SDK would then write to file:
         >>> # with open("Dockfile.yaml", "w") as f:
         >>> #     f.write(yaml_str)
@@ -91,12 +91,11 @@ def to_yaml_string(spec: DockSpec, exclude_none: bool = True) -> str:
         import yaml
     except ImportError:
         raise ImportError(
-            "PyYAML is required for YAML serialization. "
-            "Install with: pip install pyyaml"
+            "PyYAML is required for YAML serialization. Install with: pip install pyyaml"
         )
-    
+
     data = to_dict(spec, exclude_none=exclude_none)
-    
+
     # Use safe_dump with nice formatting
     return yaml.dump(
         data,
@@ -109,19 +108,19 @@ def to_yaml_string(spec: DockSpec, exclude_none: bool = True) -> str:
 def from_dict(data: Dict[str, Any]) -> DockSpec:
     """
     Create DockSpec from dictionary.
-    
+
     This is a convenience wrapper around DockSpec.model_validate().
     It's provided for API consistency with to_dict().
-    
+
     Args:
         data: Dictionary containing Dockfile configuration
-        
+
     Returns:
         Validated DockSpec object
-        
+
     Raises:
         ValidationError: If data doesn't match schema
-        
+
     Examples:
         >>> data = {
         ...     "version": "1.0",
@@ -138,4 +137,3 @@ def from_dict(data: Dict[str, Any]) -> DockSpec:
         'test-agent'
     """
     return DockSpec.model_validate(data)
-

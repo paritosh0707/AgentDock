@@ -6,9 +6,9 @@ Core modules for loading Dockfiles, validating configurations,
 and invoking agents locally.
 """
 
-from .loader import load_dockspec, expand_env_vars
 from .invoker import invoke_local
-from .validate import validate_dockspec, validate
+from .loader import expand_env_vars, load_dockspec
+from .validate import validate, validate_dockspec
 
 __all__ = [
     "load_dockspec",
@@ -17,4 +17,3 @@ __all__ = [
     "validate_dockspec",
     "validate",
 ]
-

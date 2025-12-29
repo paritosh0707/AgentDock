@@ -1,15 +1,16 @@
 """Mock agent for testing purposes."""
-from typing import Dict, Any
+
+from typing import Any, Dict
 
 
 class MockAgent:
     """A simple mock agent that echoes input."""
-    
+
     def invoke(self, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Echo the input back with a result field."""
         return {
             "result": f"Mock agent processed: {payload.get('text', 'no input')}",
-            "status": "success"
+            "status": "success",
         }
 
 
@@ -22,4 +23,3 @@ def build_agent():
 def build_mock_agent():
     """Alternative factory function for compatibility."""
     return MockAgent()
-

@@ -12,8 +12,8 @@ For new code, consider importing directly from the specific modules:
 """
 
 # Re-export from core modules
-from .core.loader import load_dockspec, expand_env_vars
 from .core.invoker import invoke_local
+from .core.loader import expand_env_vars, load_dockspec
 
 # Re-export from remote module
 from .remote.controller import ControllerClient
