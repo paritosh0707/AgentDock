@@ -5,15 +5,21 @@ Shared utilities and primitives used across all dockrion packages and services.
 
 This package provides:
 - Exception classes for consistent error handling
-- Constants for supported values and defaults
+- Constants for supported values and defaults (namespaced)
 - Validation utilities for input checking
 - Authentication utilities for API key management
 - HTTP response models for consistent API responses
 
 Usage:
-    from dockrion_common import ValidationError, SUPPORTED_FRAMEWORKS
+    from dockrion_common import ValidationError, SupportedValues
     from dockrion_common import validate_entrypoint, generate_api_key
-    from dockrion_common import success_response, error_response
+    from dockrion_common import error_response, health_response
+    
+    # Namespaced constants (recommended)
+    from dockrion_common import RuntimeDefaults, Timeouts, Patterns
+    
+    port = RuntimeDefaults.PORT
+    timeout = Timeouts.INVOCATION
 """
 
 # Error classes
@@ -30,64 +36,27 @@ from .errors import (
     MissingSecretError,
 )
 
-# Constants
+# Constants - Namespaced classes (recommended)
 from .constants import (
-    # Version info
+    # Namespaced classes
+    VersionInfo,
+    SupportedValues,
+    RuntimeDefaults,
+    ServicePorts,
+    Timeouts,
+    ServiceNames,
+    EnvVars,
+    Patterns,
+    HttpStatus,
+    # Convenience aliases (lists from SupportedValues)
     DOCKRION_VERSION,
     SUPPORTED_DOCKFILE_VERSIONS,
     API_VERSION,
-    # Supported values
     SUPPORTED_FRAMEWORKS,
     SUPPORTED_AUTH_MODES,
     SUPPORTED_STREAMING,
     LOG_LEVELS,
-    # Permissions
     PERMISSIONS,
-    # Defaults
-    DEFAULT_CONTROLLER_PORT,
-    DEFAULT_AUTH_PORT,
-    DEFAULT_BUILDER_PORT,
-    DEFAULT_RUNTIME_PORT,
-    DEFAULT_DASHBOARD_BFF_PORT,
-    DEFAULT_HOST,
-    DEFAULT_PORT,
-    DEFAULT_LOG_LEVEL,
-    DEFAULT_REQUEST_TIMEOUT,
-    DEFAULT_BUILD_TIMEOUT,
-    DEFAULT_INVOCATION_TIMEOUT,
-    DEFAULT_RATE_LIMIT,
-    DEFAULT_CORS_ORIGINS,
-    DEFAULT_CORS_METHODS,
-    # Environment variables
-    ENV_LANGFUSE_PUBLIC,
-    ENV_LANGFUSE_SECRET,
-    ENV_API_KEY,
-    ENV_CONTROLLER_URL,
-    ENV_AUTH_URL,
-    ENV_BUILDER_URL,
-    # Service names
-    SERVICE_CONTROLLER,
-    SERVICE_AUTH,
-    SERVICE_BUILDER,
-    SERVICE_RUNTIME,
-    SERVICE_DASHBOARD_BFF,
-    # Patterns
-    AGENT_NAME_PATTERN,
-    ENTRYPOINT_PATTERN,
-    RATE_LIMIT_PATTERN,
-    # HTTP status codes
-    HTTP_OK,
-    HTTP_CREATED,
-    HTTP_ACCEPTED,
-    HTTP_NO_CONTENT,
-    HTTP_BAD_REQUEST,
-    HTTP_UNAUTHORIZED,
-    HTTP_FORBIDDEN,
-    HTTP_NOT_FOUND,
-    HTTP_CONFLICT,
-    HTTP_TOO_MANY_REQUESTS,
-    HTTP_INTERNAL_ERROR,
-    HTTP_SERVICE_UNAVAILABLE,
 )
 
 # Validation utilities
@@ -172,62 +141,25 @@ __all__ = [
     "DeploymentError",
     "PolicyViolationError",
     "MissingSecretError",
-    # Version info
+    # Namespaced constants (recommended)
+    "VersionInfo",
+    "SupportedValues",
+    "RuntimeDefaults",
+    "ServicePorts",
+    "Timeouts",
+    "ServiceNames",
+    "EnvVars",
+    "Patterns",
+    "HttpStatus",
+    # Convenience aliases
     "DOCKRION_VERSION",
     "SUPPORTED_DOCKFILE_VERSIONS",
     "API_VERSION",
-    # Supported values
     "SUPPORTED_FRAMEWORKS",
     "SUPPORTED_AUTH_MODES",
     "SUPPORTED_STREAMING",
     "LOG_LEVELS",
-    # Permissions
     "PERMISSIONS",
-    # Defaults
-    "DEFAULT_CONTROLLER_PORT",
-    "DEFAULT_AUTH_PORT",
-    "DEFAULT_BUILDER_PORT",
-    "DEFAULT_RUNTIME_PORT",
-    "DEFAULT_DASHBOARD_BFF_PORT",
-    "DEFAULT_HOST",
-    "DEFAULT_PORT",
-    "DEFAULT_LOG_LEVEL",
-    "DEFAULT_REQUEST_TIMEOUT",
-    "DEFAULT_BUILD_TIMEOUT",
-    "DEFAULT_INVOCATION_TIMEOUT",
-    "DEFAULT_RATE_LIMIT",
-    "DEFAULT_CORS_ORIGINS",
-    "DEFAULT_CORS_METHODS",
-    # Environment variables
-    "ENV_LANGFUSE_PUBLIC",
-    "ENV_LANGFUSE_SECRET",
-    "ENV_API_KEY",
-    "ENV_CONTROLLER_URL",
-    "ENV_AUTH_URL",
-    "ENV_BUILDER_URL",
-    # Service names
-    "SERVICE_CONTROLLER",
-    "SERVICE_AUTH",
-    "SERVICE_BUILDER",
-    "SERVICE_RUNTIME",
-    "SERVICE_DASHBOARD_BFF",
-    # Patterns
-    "AGENT_NAME_PATTERN",
-    "ENTRYPOINT_PATTERN",
-    "RATE_LIMIT_PATTERN",
-    # HTTP status codes
-    "HTTP_OK",
-    "HTTP_CREATED",
-    "HTTP_ACCEPTED",
-    "HTTP_NO_CONTENT",
-    "HTTP_BAD_REQUEST",
-    "HTTP_UNAUTHORIZED",
-    "HTTP_FORBIDDEN",
-    "HTTP_NOT_FOUND",
-    "HTTP_CONFLICT",
-    "HTTP_TOO_MANY_REQUESTS",
-    "HTTP_INTERNAL_ERROR",
-    "HTTP_SERVICE_UNAVAILABLE",
     # Validation
     "validate_entrypoint",
     "validate_handler",

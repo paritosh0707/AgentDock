@@ -23,6 +23,7 @@ from dockrion_schema import DockSpec
 from dockrion_adapters import get_adapter, get_handler_adapter
 from dockrion_common.errors import DockrionError, ValidationError
 from dockrion_common.logger import get_logger
+from dockrion_common.constants import RuntimeDefaults, Timeouts
 from dockrion_common.http_models import (
     error_response,
     health_response,
@@ -48,36 +49,37 @@ class RuntimeConfig:
     1. **Entrypoint Mode**: Uses framework adapter to load agent with .invoke()
     2. **Handler Mode**: Uses handler adapter to call function directly
     
-    Provides easy access to configuration values with defaults.
+    All defaults use RuntimeDefaults from dockrion_common.constants
+    as the single source of truth.
     """
     # Agent info
     agent_name: str
     agent_framework: str
-    agent_description: str = "Dockrion Agent"
+    agent_description: str = RuntimeDefaults.AGENT_DESCRIPTION
     
     # Invocation mode (entrypoint or handler)
     agent_entrypoint: Optional[str] = None  # Factory → Agent pattern
     agent_handler: Optional[str] = None     # Direct callable pattern
     use_handler_mode: bool = False          # True if handler mode
     
-    # Server config
-    host: str = "0.0.0.0"
-    port: int = 8080
+    # Server config (defaults from RuntimeDefaults)
+    host: str = RuntimeDefaults.HOST
+    port: int = RuntimeDefaults.PORT
     
     # Features
     enable_streaming: bool = False
-    timeout_sec: int = 30
+    timeout_sec: int = Timeouts.REQUEST
     
-    # Auth
+    # Auth (defaults from RuntimeDefaults)
     auth_enabled: bool = False
-    auth_mode: str = "none"
+    auth_mode: str = RuntimeDefaults.AUTH_MODE
     
     # Metadata
-    version: str = "1.0.0"
+    version: str = RuntimeDefaults.AGENT_VERSION
     
-    # CORS (as dict for flexibility)
-    cors_origins: list = field(default_factory=lambda: ["*"])
-    cors_methods: list = field(default_factory=lambda: ["*"])
+    # CORS (defaults from RuntimeDefaults - converted to list)
+    cors_origins: list = field(default_factory=lambda: list(RuntimeDefaults.CORS_ORIGINS))
+    cors_methods: list = field(default_factory=lambda: list(RuntimeDefaults.CORS_METHODS))
     
     @property
     def invocation_target(self) -> str:
@@ -115,32 +117,32 @@ class RuntimeConfig:
         # arguments is Dict[str, Any] in schema - always a dict
         arguments = spec.arguments if spec.arguments else {}
         
-        # Extract timeout from arguments dict
-        timeout_sec = arguments.get("timeout_sec", 30) if isinstance(arguments, dict) else 30
+        # Extract timeout from arguments dict (fallback to Timeouts.REQUEST)
+        timeout_sec = arguments.get("timeout_sec", Timeouts.REQUEST) if isinstance(arguments, dict) else Timeouts.REQUEST
         
         # cors is Optional[Dict[str, List[str]]] in schema - extract safely
         cors_config = expose.cors if expose and expose.cors else None
         if cors_config and isinstance(cors_config, dict):
-            cors_origins = cors_config.get("origins", ["*"])
-            cors_methods = cors_config.get("methods", ["*"])
+            cors_origins = cors_config.get("origins", list(RuntimeDefaults.CORS_ORIGINS))
+            cors_methods = cors_config.get("methods", list(RuntimeDefaults.CORS_METHODS))
         else:
-            cors_origins = ["*"]
-            cors_methods = ["*"]
+            cors_origins = list(RuntimeDefaults.CORS_ORIGINS)
+            cors_methods = list(RuntimeDefaults.CORS_METHODS)
         
         return cls(
             agent_name=agent.name,
-            agent_framework=agent.framework or "custom",
-            agent_description=agent.description or "Dockrion Agent",
+            agent_framework=agent.framework or RuntimeDefaults.DEFAULT_FRAMEWORK,
+            agent_description=agent.description or RuntimeDefaults.AGENT_DESCRIPTION,
             agent_entrypoint=entrypoint,
             agent_handler=handler,
             use_handler_mode=use_handler_mode,
-            host=expose.host if expose else "0.0.0.0",
-            port=expose.port if expose else 8080,
+            host=expose.host if expose else RuntimeDefaults.HOST,
+            port=expose.port if expose else RuntimeDefaults.PORT,
             enable_streaming=bool(expose and expose.streaming and expose.streaming != "none"),
             timeout_sec=timeout_sec,
             auth_enabled=bool(auth and auth.mode != "none"),
-            auth_mode=auth.mode if auth else "none",
-            version=metadata.version if metadata else "1.0.0",
+            auth_mode=auth.mode if auth else RuntimeDefaults.AUTH_MODE,
+            version=metadata.version if metadata else RuntimeDefaults.AGENT_VERSION,
             cors_origins=cors_origins,
             cors_methods=cors_methods,
         )

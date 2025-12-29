@@ -15,12 +15,7 @@ import re
 from typing import Tuple
 
 from .errors import ValidationError
-from .constants import (
-    AGENT_NAME_PATTERN,
-    ENTRYPOINT_PATTERN,
-    HANDLER_PATTERN,
-    RATE_LIMIT_PATTERN,
-)
+from .constants import Patterns
 
 
 def validate_entrypoint(entrypoint: str) -> Tuple[str, str]:
@@ -68,7 +63,7 @@ def validate_entrypoint(entrypoint: str) -> Tuple[str, str]:
         )
     
     # Validate format using pattern
-    if not re.match(ENTRYPOINT_PATTERN, entrypoint):
+    if not re.match(Patterns.ENTRYPOINT, entrypoint):
         raise ValidationError(
             "Entrypoint contains invalid characters. "
             "Use only alphanumeric, dots (.), and underscores (_). "
@@ -128,7 +123,7 @@ def validate_handler(handler: str) -> Tuple[str, str]:
         )
     
     # Validate format using pattern
-    if not re.match(HANDLER_PATTERN, handler):
+    if not re.match(Patterns.HANDLER, handler):
         raise ValidationError(
             "Handler contains invalid characters. "
             "Use only alphanumeric, dots (.), and underscores (_). "
@@ -156,7 +151,7 @@ def validate_agent_name(name: str) -> None:
     if not name:
         raise ValidationError("Agent name cannot be empty")
     
-    if not re.match(AGENT_NAME_PATTERN, name):
+    if not re.match(Patterns.AGENT_NAME, name):
         raise ValidationError(
             "Agent name must be lowercase alphanumeric with hyphens only. "
             f"Got: '{name}'"
@@ -205,7 +200,7 @@ def parse_rate_limit(limit_str: str) -> Tuple[int, int]:
     if not limit_str:
         raise ValidationError("Rate limit cannot be empty")
     
-    match = re.match(RATE_LIMIT_PATTERN, limit_str)
+    match = re.match(Patterns.RATE_LIMIT, limit_str)
     if not match:
         raise ValidationError(
             "Rate limit must be in format 'number/unit' where unit is s, m, h, or d. "

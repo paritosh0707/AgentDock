@@ -33,6 +33,7 @@ from dockrion_common import (
     LOG_LEVELS,
     PERMISSIONS,
     SUPPORTED_DOCKFILE_VERSIONS,
+    RuntimeDefaults,
     validate_entrypoint,
     validate_handler,
     validate_agent_name,
@@ -666,13 +667,13 @@ class ExposeConfig(BaseModel):
     
     Controls how the agent runtime exposes APIs (REST, streaming).
     
-    Note: streaming field uses constants from common package (SUPPORTED_STREAMING)
-    as the single source of truth for validation.
+    Note: All defaults use RuntimeDefaults from common package
+    as the single source of truth.
     """
     rest: bool = True
-    streaming: str = "sse"  # Validated against SUPPORTED_STREAMING from common
-    port: int = 8080
-    host: str = "0.0.0.0"
+    streaming: str = RuntimeDefaults.STREAMING
+    port: int = RuntimeDefaults.PORT
+    host: str = RuntimeDefaults.HOST
     cors: Optional[Dict[str, List[str]]] = None
     
     model_config = ConfigDict(extra="allow")

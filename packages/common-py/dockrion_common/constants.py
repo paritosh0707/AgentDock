@@ -4,197 +4,291 @@ dockrion Shared Constants
 This module defines constants used across multiple dockrion packages and services.
 It serves as the single source of truth for supported values, defaults, and configuration.
 
+All constants are organized into namespaced frozen dataclasses for:
+- Type safety and IDE autocomplete
+- Immutability (frozen=True prevents modification)
+- Clear organization by domain
+
 Usage:
-    from dockrion_common.constants import SUPPORTED_FRAMEWORKS, PERMISSIONS
+    from dockrion_common.constants import (
+        RuntimeDefaults,
+        ServicePorts,
+        Timeouts,
+        SupportedValues,
+        Patterns,
+    )
     
-    if framework not in SUPPORTED_FRAMEWORKS:
+    port = RuntimeDefaults.PORT
+    timeout = Timeouts.INVOCATION
+    
+    if framework not in SupportedValues.FRAMEWORKS:
         raise ValidationError(f"Unsupported framework: {framework}")
 """
+
+from dataclasses import dataclass
+from typing import Tuple
+
 
 # =============================================================================
 # VERSION INFORMATION
 # =============================================================================
 
-DOCKRION_VERSION = "1.0"
-"""Current dockrion platform version"""
-
-SUPPORTED_DOCKFILE_VERSIONS = ["1.0"]
-"""List of supported Dockfile specification versions"""
-
-API_VERSION = "v1"
-"""Current API version for REST endpoints"""
+@dataclass(frozen=True)
+class _VersionInfo:
+    """Version information for dockrion platform."""
+    PLATFORM: str = "1.0"
+    API: str = "v1"
+    DOCKFILE_SUPPORTED: Tuple[str, ...] = ("1.0",)
 
 
-# =============================================================================
-# SUPPORTED VALUES (Must match schema definitions)
-# =============================================================================
+VersionInfo = _VersionInfo()
 
-SUPPORTED_FRAMEWORKS = ["langgraph", "langchain", "custom"]
-"""Agent frameworks supported by dockrion. 'custom' is for handler-based agents."""
-
-HANDLER_PATTERN = r"^[\w\.]+:\w+$"
-"""Regex pattern for valid handler format (module:callable)"""
-
-SUPPORTED_AUTH_MODES = ["none", "api_key", "jwt", "oauth2"]
-"""Authentication modes supported by dockrion (none = disabled)"""
-
-SUPPORTED_STREAMING = ["sse", "websocket", "none"]
-"""Streaming modes for agent responses"""
-
-LOG_LEVELS = ["debug", "info", "warn", "error"]
-"""Valid log levels for observability configuration"""
+# Convenience aliases for version info
+DOCKRION_VERSION = VersionInfo.PLATFORM
+API_VERSION = VersionInfo.API
+SUPPORTED_DOCKFILE_VERSIONS = list(VersionInfo.DOCKFILE_SUPPORTED)
 
 
 # =============================================================================
-# PERMISSIONS
+# SUPPORTED VALUES
 # =============================================================================
 
-PERMISSIONS = [
-    "deploy",           # Deploy new agents
-    "rollback",         # Rollback to previous versions
-    "invoke",           # Invoke agents
-    "view_metrics",     # View metrics and telemetry
-    "key_manage",       # Manage API keys
-    "read_logs",        # Read agent logs
-    "read_docs",        # Read documentation
-]
-"""Available permissions for role-based access control"""
+@dataclass(frozen=True)
+class _SupportedValues:
+    """Supported values for various configuration options."""
+    FRAMEWORKS: Tuple[str, ...] = ("langgraph", "langchain", "custom")
+    AUTH_MODES: Tuple[str, ...] = ("none", "api_key", "jwt", "oauth2")
+    STREAMING_MODES: Tuple[str, ...] = ("sse", "websocket", "none")
+    LOG_LEVELS: Tuple[str, ...] = ("debug", "info", "warn", "error")
+    
+    PERMISSIONS: Tuple[str, ...] = (
+        "deploy",           # Deploy new agents
+        "rollback",         # Rollback to previous versions
+        "invoke",           # Invoke agents
+        "view_metrics",     # View metrics and telemetry
+        "key_manage",       # Manage API keys
+        "read_logs",        # Read agent logs
+        "read_docs",        # Read documentation
+    )
 
 
-# =============================================================================
-# DEFAULT VALUES
-# =============================================================================
+SupportedValues = _SupportedValues()
 
-# Service Ports (for local development)
-DEFAULT_CONTROLLER_PORT = 5001
-"""Default port for Controller service"""
-
-DEFAULT_AUTH_PORT = 5002
-"""Default port for Auth service"""
-
-DEFAULT_BUILDER_PORT = 5003
-"""Default port for Builder service"""
-
-DEFAULT_RUNTIME_PORT = 8080
-"""Default port for Runtime Gateway"""
-
-DEFAULT_DASHBOARD_BFF_PORT = 4000
-"""Default port for Dashboard BFF"""
-
-# Runtime Defaults
-DEFAULT_HOST = "0.0.0.0"
-"""Default host for service binding"""
-
-DEFAULT_PORT = 8080
-"""Default port for agent runtime"""
-
-DEFAULT_LOG_LEVEL = "info"
-"""Default logging level"""
-
-# Timeouts (seconds)
-DEFAULT_REQUEST_TIMEOUT = 30
-"""Default timeout for HTTP requests"""
-
-DEFAULT_BUILD_TIMEOUT = 600
-"""Default timeout for Docker image builds (10 minutes)"""
-
-DEFAULT_INVOCATION_TIMEOUT = 120
-"""Default timeout for agent invocations (2 minutes)"""
-
-# Rate Limiting
-DEFAULT_RATE_LIMIT = "100/m"
-"""Default rate limit (100 requests per minute)"""
-
-# API Configuration
-DEFAULT_CORS_ORIGINS = ["http://localhost:3000", "http://localhost:5173"]
-"""Default CORS origins for local development"""
-
-DEFAULT_CORS_METHODS = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-"""Default CORS methods"""
+# Convenience aliases for supported values
+SUPPORTED_FRAMEWORKS = list(SupportedValues.FRAMEWORKS)
+SUPPORTED_AUTH_MODES = list(SupportedValues.AUTH_MODES)
+SUPPORTED_STREAMING = list(SupportedValues.STREAMING_MODES)
+LOG_LEVELS = list(SupportedValues.LOG_LEVELS)
+PERMISSIONS = list(SupportedValues.PERMISSIONS)
 
 
 # =============================================================================
-# ENVIRONMENT VARIABLE NAMES
+# RUNTIME DEFAULTS
 # =============================================================================
 
-ENV_LANGFUSE_PUBLIC = "LANGFUSE_PUBLIC"
-"""Environment variable for Langfuse public key"""
+@dataclass(frozen=True)
+class _RuntimeDefaults:
+    """
+    Centralized runtime configuration defaults.
+    
+    This is the single source of truth for runtime defaults.
+    All packages should import and use these values.
+    
+    Usage:
+        from dockrion_common.constants import RuntimeDefaults
+        
+        port = spec.expose.port or RuntimeDefaults.PORT
+        host = RuntimeDefaults.HOST
+    """
+    # Network
+    HOST: str = "0.0.0.0"
+    PORT: int = 8080
+    
+    # Streaming
+    STREAMING: str = "sse"
+    
+    # Auth
+    AUTH_MODE: str = "none"
+    
+    # CORS (permissive by default for runtime)
+    CORS_ORIGINS: Tuple[str, ...] = ("*",)
+    CORS_METHODS: Tuple[str, ...] = ("*",)
+    
+    # Development CORS (specific origins for UI dev servers)
+    DEV_CORS_ORIGINS: Tuple[str, ...] = ("http://localhost:3000", "http://localhost:5173")
+    DEV_CORS_METHODS: Tuple[str, ...] = ("GET", "POST", "PUT", "DELETE", "OPTIONS")
+    
+    # Versioning
+    AGENT_VERSION: str = "1.0.0"
+    
+    # Framework
+    DEFAULT_FRAMEWORK: str = "custom"
+    
+    # Agent defaults
+    AGENT_DESCRIPTION: str = "Dockrion Agent"
+    
+    # Log level
+    LOG_LEVEL: str = "info"
+    
+    # Rate limiting
+    RATE_LIMIT: str = "100/m"
 
-ENV_LANGFUSE_SECRET = "LANGFUSE_SECRET"
-"""Environment variable for Langfuse secret key"""
 
-ENV_API_KEY = "DOCKRION_API_KEY"
-"""Environment variable for dockrion API key"""
+RuntimeDefaults = _RuntimeDefaults()
 
-ENV_CONTROLLER_URL = "DOCKRION_CONTROLLER_URL"
-"""Environment variable for Controller service URL"""
 
-ENV_AUTH_URL = "DOCKRION_AUTH_URL"
-"""Environment variable for Auth service URL"""
+# =============================================================================
+# SERVICE PORTS
+# =============================================================================
 
-ENV_BUILDER_URL = "DOCKRION_BUILDER_URL"
-"""Environment variable for Builder service URL"""
+@dataclass(frozen=True)
+class _ServicePorts:
+    """
+    Default ports for dockrion services.
+    
+    Usage:
+        from dockrion_common.constants import ServicePorts
+        
+        controller_port = ServicePorts.CONTROLLER
+    """
+    CONTROLLER: int = 5001
+    AUTH: int = 5002
+    BUILDER: int = 5003
+    RUNTIME: int = 8080
+    DASHBOARD_BFF: int = 4000
+
+
+ServicePorts = _ServicePorts()
+
+
+# =============================================================================
+# TIMEOUTS
+# =============================================================================
+
+@dataclass(frozen=True)
+class _Timeouts:
+    """
+    Default timeout values in seconds.
+    
+    Usage:
+        from dockrion_common.constants import Timeouts
+        
+        timeout = Timeouts.INVOCATION
+    """
+    REQUEST: int = 30
+    BUILD: int = 600  # 10 minutes
+    INVOCATION: int = 120  # 2 minutes
+
+
+Timeouts = _Timeouts()
 
 
 # =============================================================================
 # SERVICE NAMES
 # =============================================================================
 
-SERVICE_CONTROLLER = "controller"
-"""Controller service name"""
+@dataclass(frozen=True)
+class _ServiceNames:
+    """
+    Standard service names for dockrion platform.
+    
+    Usage:
+        from dockrion_common.constants import ServiceNames
+        
+        service = ServiceNames.CONTROLLER
+    """
+    CONTROLLER: str = "controller"
+    AUTH: str = "auth"
+    BUILDER: str = "builder"
+    RUNTIME: str = "runtime-gateway"
+    DASHBOARD_BFF: str = "dashboard-bff"
 
-SERVICE_AUTH = "auth"
-"""Auth service name"""
 
-SERVICE_BUILDER = "builder"
-"""Builder service name"""
+ServiceNames = _ServiceNames()
 
-SERVICE_RUNTIME = "runtime-gateway"
-"""Runtime Gateway service name"""
 
-SERVICE_DASHBOARD_BFF = "dashboard-bff"
-"""Dashboard BFF service name"""
+# =============================================================================
+# ENVIRONMENT VARIABLES
+# =============================================================================
+
+@dataclass(frozen=True)
+class _EnvVars:
+    """
+    Standard environment variable names.
+    
+    Usage:
+        from dockrion_common.constants import EnvVars
+        import os
+        
+        api_key = os.getenv(EnvVars.API_KEY)
+    """
+    LANGFUSE_PUBLIC: str = "LANGFUSE_PUBLIC"
+    LANGFUSE_SECRET: str = "LANGFUSE_SECRET"
+    API_KEY: str = "DOCKRION_API_KEY"
+    CONTROLLER_URL: str = "DOCKRION_CONTROLLER_URL"
+    AUTH_URL: str = "DOCKRION_AUTH_URL"
+    BUILDER_URL: str = "DOCKRION_BUILDER_URL"
+
+
+EnvVars = _EnvVars()
 
 
 # =============================================================================
 # VALIDATION PATTERNS
 # =============================================================================
 
-AGENT_NAME_PATTERN = r"^[a-z0-9-]+$"
-"""Regex pattern for valid agent names (lowercase alphanumeric with hyphens)"""
+@dataclass(frozen=True)
+class _Patterns:
+    """
+    Validation regex patterns.
+    
+    Usage:
+        from dockrion_common.constants import Patterns
+        import re
+        
+        if not re.match(Patterns.AGENT_NAME, name):
+            raise ValidationError("Invalid agent name")
+    """
+    AGENT_NAME: str = r"^[a-z0-9-]+$"
+    ENTRYPOINT: str = r"^[\w\.]+:\w+$"
+    HANDLER: str = r"^[\w\.]+:\w+$"
+    RATE_LIMIT: str = r"^(\d+)/(s|m|h|d)$"
 
-ENTRYPOINT_PATTERN = r"^[\w\.]+:\w+$"
-"""Regex pattern for valid entrypoint format (module:callable)"""
 
-RATE_LIMIT_PATTERN = r"^(\d+)/(s|m|h|d)$"
-"""Regex pattern for rate limit format (e.g., 1000/m)"""
-
-
-# =============================================================================
-# HTTP STATUS CODES (for reference)
-# =============================================================================
-
-HTTP_OK = 200
-HTTP_CREATED = 201
-HTTP_ACCEPTED = 202
-HTTP_NO_CONTENT = 204
-
-HTTP_BAD_REQUEST = 400
-HTTP_UNAUTHORIZED = 401
-HTTP_FORBIDDEN = 403
-HTTP_NOT_FOUND = 404
-HTTP_CONFLICT = 409
-HTTP_TOO_MANY_REQUESTS = 429
-
-HTTP_INTERNAL_ERROR = 500
-HTTP_SERVICE_UNAVAILABLE = 503
+Patterns = _Patterns()
 
 
 # =============================================================================
-# FUTURE EXTENSIBILITY
+# HTTP STATUS CODES
 # =============================================================================
 
-# Note: When adding new constants for V2+, use versioned naming:
-# SUPPORTED_FRAMEWORKS_V2 = ["langgraph", "langchain", "autogen"]
-# This prevents breaking V1 consumers
+@dataclass(frozen=True)
+class _HttpStatus:
+    """
+    HTTP status codes for reference.
+    
+    Usage:
+        from dockrion_common.constants import HttpStatus
+        
+        return JSONResponse(status_code=HttpStatus.OK, content=data)
+    """
+    # Success
+    OK: int = 200
+    CREATED: int = 201
+    ACCEPTED: int = 202
+    NO_CONTENT: int = 204
+    
+    # Client errors
+    BAD_REQUEST: int = 400
+    UNAUTHORIZED: int = 401
+    FORBIDDEN: int = 403
+    NOT_FOUND: int = 404
+    CONFLICT: int = 409
+    TOO_MANY_REQUESTS: int = 429
+    
+    # Server errors
+    INTERNAL_ERROR: int = 500
+    SERVICE_UNAVAILABLE: int = 503
 
+
+HttpStatus = _HttpStatus()
