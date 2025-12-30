@@ -25,9 +25,8 @@ from ..utils.package_manager import (
     install_requirements,
     print_uv_setup_instructions,
 )
-from ..utils.workspace import find_workspace_root, get_relative_agent_path
+from ..utils.workspace import detect_local_packages, find_workspace_root, get_relative_agent_path
 from .docker import check_docker_available, docker_build
-from .pypi_server import get_local_pypi_url, start_local_pypi_server, stop_local_pypi_server
 from .runtime_gen import ensure_runtime_dir, write_runtime_files
 
 logger = get_logger(__name__)
@@ -139,30 +138,33 @@ def deploy(
         build_context = "."
         logger.info("No workspace root found, using current directory as build context")
 
-    # Handle development mode with local PyPI server
-    pypi_server_proc = None
-    local_pypi_url = None
+    # Handle development mode
     dev_mode = dev
+    local_packages = None
+
+    if dev_mode and not workspace_root:
+        logger.warning(
+            "Development mode requested but not in a workspace. "
+            "Falling back to PyPI installation."
+        )
+        dev_mode = False
 
     if dev_mode and workspace_root:
-        dist_dir = workspace_root / "dist"
-        if dist_dir.exists() and list(dist_dir.glob("*.whl")):
-            logger.info("Development mode: Starting local PyPI server...")
-            pypi_server_proc, port = start_local_pypi_server(dist_dir)
-            local_pypi_url = get_local_pypi_url(port)
-            logger.info(f"Local PyPI URL: {local_pypi_url}")
+        # Detect local Dockrion packages in the workspace
+        local_packages = detect_local_packages(workspace_root)
+        if local_packages:
+            logger.info(f"Development mode: Found {len(local_packages)} local packages to install")
         else:
             logger.warning(
-                "Development mode requested but no wheel files found in dist/. "
-                "Run 'uv build --wheel' in each package directory first. "
-                "Falling back to PyPI."
+                "Development mode: No local Dockrion packages found in workspace. "
+                "Falling back to PyPI installation."
             )
             dev_mode = False
 
     try:
         # Generate Dockerfile with correct paths and dev mode settings
         dockerfile_content = renderer.render_dockerfile(
-            spec, agent_path=relative_agent_path, dev_mode=dev_mode, local_pypi_url=local_pypi_url
+            spec, agent_path=relative_agent_path, dev_mode=dev_mode, local_packages=local_packages
         )
 
         # Build the image
@@ -177,10 +179,6 @@ def deploy(
         raise
     except Exception as e:
         raise DockrionError(f"Docker build failed for agent '{spec.agent.name}'.\nError: {str(e)}")
-    finally:
-        # Always stop the local PyPI server
-        if pypi_server_proc:
-            stop_local_pypi_server(pypi_server_proc)
 
     return {
         "image": image,

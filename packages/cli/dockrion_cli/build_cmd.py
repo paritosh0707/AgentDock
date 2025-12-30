@@ -159,12 +159,38 @@ def build(
         console.print()
         success(f"Successfully built image: [bold cyan]{result['image']}[/bold cyan]")
 
+        # Check if there are required secrets to show in the run command
+        has_required_secrets = False
+        secret_env_example = ""
+        required_secrets = spec.secrets.required if spec.secrets else []
+        if required_secrets:
+            has_required_secrets = True
+            # Get first required secret name for example
+            first_secret = required_secrets[0].name
+            secret_env_example = f"-e {first_secret}=<value> "
+            if len(required_secrets) > 1:
+                secret_env_example += "... "
+
         # Show next steps
         console.print("\n[bold]Next steps:[/bold]")
         console.print("  1. Run locally:")
-        console.print(
-            f"     [cyan]docker run -p {expose_port}:{expose_port} {result['image']}[/cyan]"
-        )
+        if has_required_secrets:
+            console.print(
+                f"     [cyan]docker run -p {expose_port}:{expose_port} {secret_env_example}{result['image']}[/cyan]"
+            )
+            console.print(
+                f"     [dim]Or use an env file:[/dim] [cyan]docker run -p {expose_port}:{expose_port} --env-file .env {result['image']}[/cyan]"
+            )
+            console.print()
+            console.print("     [yellow]⚠️  Required secrets (must be provided at runtime):[/yellow]")
+            for secret in required_secrets:
+                desc = f" - {secret.description}" if secret.description else ""
+                console.print(f"        [dim]• {secret.name}{desc}[/dim]")
+        else:
+            console.print(
+                f"     [cyan]docker run -p {expose_port}:{expose_port} {result['image']}[/cyan]"
+            )
+        console.print()
         console.print("  2. Push to registry:")
         console.print(
             f"     [cyan]docker tag {result['image']} <registry>/{agent_name}:latest[/cyan]"

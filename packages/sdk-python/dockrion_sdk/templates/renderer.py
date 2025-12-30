@@ -337,7 +337,7 @@ class TemplateRenderer:
         extra_context: Optional[Dict[str, Any]] = None,
         agent_path: str = ".",
         dev_mode: bool = False,
-        local_pypi_url: Optional[str] = None,
+        local_packages: Optional[list] = None,
     ) -> str:
         """
         Render the Dockerfile.
@@ -346,8 +346,8 @@ class TemplateRenderer:
             spec: Agent specification
             extra_context: Additional template variables
             agent_path: Relative path from build context to agent directory
-            dev_mode: If True, use local PyPI server for Dockrion packages
-            local_pypi_url: URL to local PyPI server (for dev mode)
+            dev_mode: If True, copy local packages into Docker (for development)
+            local_packages: List of local package dicts with 'name' and 'path' keys
 
         Returns:
             Dockerfile content
@@ -359,7 +359,7 @@ class TemplateRenderer:
         context["agent_path"] = agent_path
         # Add dev mode settings
         context["dev_mode"] = dev_mode
-        context["local_pypi_url"] = local_pypi_url
+        context["local_packages"] = local_packages
 
         template_file = TEMPLATE_FILES["dockerfile"]
         logger.info(f"Rendering Dockerfile from template: {template_file}")

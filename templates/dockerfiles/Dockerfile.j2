@@ -58,21 +58,25 @@ COPY {{ agent_path | default('.') }}/.dockrion_runtime/requirements.txt /build/r
 RUN uv pip install --system --no-cache -r /build/requirements.txt
 
 # Install Dockrion packages
-{% if dev_mode and local_pypi_url -%}
-# Development mode: Install from local PyPI server
+{% if dev_mode and local_packages -%}
+# Development mode: Copy and install local packages from monorepo
+{% for pkg in local_packages -%}
+COPY {{ pkg.path }} /build/packages/{{ pkg.name }}
+{% endfor %}
 RUN uv pip install --system --no-cache \
-    --extra-index-url {{ local_pypi_url }} \
-    dockrion-common \
-    dockrion-schema \
-    dockrion-adapters \
-    dockrion-runtime
+{% for pkg in local_packages %}    /build/packages/{{ pkg.name }}{{ " \\" if not loop.last else "" }}
+{% endfor %}
 {% else -%}
 # Production mode: Install from PyPI
+# NOTE: Dockrion packages must be published to PyPI first!
+# For development, use: dockrion build --dev
 RUN uv pip install --system --no-cache \
     dockrion-common \
     dockrion-schema \
     dockrion-adapters \
-    dockrion-runtime
+    dockrion-runtime \
+    dockrion-policy \
+    dockrion-telemetry || echo "WARNING: Dockrion packages not found on PyPI. Use --dev flag for local development."
 {% endif %}
 
 # -----------------------------------------------------------------------------
