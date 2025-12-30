@@ -6,6 +6,7 @@ This is the main entry point that assembles all runtime components.
 """
 
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Optional, Union
 
 from dockrion_adapters import get_adapter, get_handler_adapter
@@ -15,10 +16,11 @@ from dockrion_common.logger import get_logger
 from dockrion_schema import DockSpec
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from .auth import AuthContext, AuthError, create_auth_handler
 from .config import RuntimeConfig, RuntimeState
-from .endpoints import create_health_router, create_info_router, create_invoke_router
+from .endpoints import create_health_router, create_info_router, create_invoke_router, create_welcome_router
 from .metrics import RuntimeMetrics
 from .openapi import build_security_schemes, configure_openapi_security
 from .policies import create_policy_engine
@@ -161,6 +163,7 @@ def create_app(
     )
 
     # Register routers
+    app.include_router(create_welcome_router(config))
     app.include_router(create_health_router(config, state))
     app.include_router(create_info_router(config, spec))
     app.include_router(
@@ -168,6 +171,11 @@ def create_app(
             config, state, verify_auth, input_model=InputModel, output_model=OutputModel
         )
     )
+
+    # Mount static files for logo and assets
+    static_dir = Path(__file__).parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
     return app
 
