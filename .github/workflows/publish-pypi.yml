@@ -15,6 +15,11 @@ on:
         required: false
         default: false
         type: boolean
+      skip_testpypi:
+        description: 'Skip TestPyPI and publish directly to PyPI'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -98,14 +103,71 @@ jobs:
           name: dist-dockrion
           path: packages/dockrion/dist/
 
-  publish:
-    name: Publish to PyPI
+  # Step 1: Publish to TestPyPI first (when not skipped)
+  publish-testpypi:
+    name: Publish to TestPyPI
     needs: build
-    if: github.event.inputs.dry_run != 'true'
+    if: |
+      github.event.inputs.dry_run != 'true' && 
+      github.event.inputs.skip_testpypi != 'true'
+    runs-on: ubuntu-latest
+    environment: testpypi
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-dockrion
+          path: dist/
+
+      - name: List artifacts
+        run: ls -la dist/
+
+      # Publish with API Token
+      - name: Publish to TestPyPI (Token)
+        if: github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+
+      # Publish with Trusted Publisher
+      - name: Publish to TestPyPI (Trusted)
+        if: github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+          repository-url: https://test.pypi.org/legacy/
+          skip-existing: true
+          verbose: true
+
+      - name: Test install from TestPyPI
+        run: |
+          pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ dockrion
+          dockrion --help
+          echo "✓ Package installs correctly from TestPyPI"
+
+  # Step 2: Publish to PyPI (after TestPyPI succeeds, or directly if skipped)
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [build, publish-testpypi]
+    # Run if:
+    # - Not a dry run AND
+    # - Either testpypi succeeded OR testpypi was skipped
+    if: |
+      always() &&
+      github.event.inputs.dry_run != 'true' &&
+      (needs.publish-testpypi.result == 'success' || needs.publish-testpypi.result == 'skipped')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
-      id-token: write  # Required for trusted publishing
+      id-token: write
       contents: read
 
     steps:
@@ -137,29 +199,9 @@ jobs:
           skip-existing: true
           verbose: true
 
-  # Optional: Publish to TestPyPI first for testing
-  publish-test:
-    name: Publish to TestPyPI
-    needs: build
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run != 'true'
-    runs-on: ubuntu-latest
-    environment: testpypi
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist-dockrion
-          path: dist/
-
-      - name: Publish to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: dist/
-          repository-url: https://test.pypi.org/legacy/
-          skip-existing: true
-          verbose: true
-        continue-on-error: true  # Don't fail if TestPyPI publish fails
+      - name: Verify install from PyPI
+        run: |
+          sleep 30  # Wait for PyPI to index the package
+          pip install dockrion
+          dockrion --help
+          echo "✓ Package published and installs correctly from PyPI"

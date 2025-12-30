@@ -106,6 +106,11 @@ make test
 make ci
 ```
 
+## Authors
+
+- **Paritosh Sharma** — [paritoshsharma0707@gmail.com](mailto:paritoshsharma0707@gmail.com)
+- **Prakhar Agarwal** — [prakhara56@gmail.com](mailto:prakhara56@gmail.com)
+
 ## License
 
 Apache-2.0

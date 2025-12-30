@@ -10,7 +10,8 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Paritosh Sharma", email = "paritoshsharma0707@gmail.com"}
+    {name = "Paritosh Sharma", email = "paritoshsharma0707@gmail.com"},
+    {name = "Prakhar Agarwal", email = "prakhara56@gmail.com"}
 ]
 keywords = ["dockrion", "schema", "validation", "dockfile"]
 classifiers = [
