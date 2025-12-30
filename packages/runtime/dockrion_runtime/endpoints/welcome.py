@@ -202,24 +202,6 @@ def _generate_welcome_html(config: RuntimeConfig) -> str:
             color: #8896a4;
         }}
         
-        .invoke-card {{
-            background: linear-gradient(135deg, #1e3a5f 0%, #2d4a6f 100%);
-            border-color: transparent;
-        }}
-        
-        .invoke-card .endpoint-name,
-        .invoke-card .endpoint-path {{
-            color: white;
-        }}
-        
-        .invoke-card .endpoint-path {{
-            opacity: 0.7;
-        }}
-        
-        .invoke-card:hover {{
-            background: linear-gradient(135deg, #2d4a6f 0%, #3d5a7f 100%);
-        }}
-        
         .meta-info {{
             margin-top: 2rem;
             display: flex;
@@ -291,10 +273,6 @@ def _generate_welcome_html(config: RuntimeConfig) -> str:
                 color: #e1e8ed;
             }}
             
-            .invoke-card {{
-                background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-            }}
-            
             .footer {{
                 color: #5a6c7d;
             }}
@@ -325,30 +303,10 @@ def _generate_welcome_html(config: RuntimeConfig) -> str:
             
             <!-- Endpoint Quick Links -->
             <div class="endpoints-grid">
-                <a href="/invoke" class="endpoint-card invoke-card" onclick="event.preventDefault(); alert('Use POST /invoke to call this agent');">
-                    <span class="endpoint-icon">⚡</span>
-                    <span class="endpoint-name">Invoke</span>
-                    <span class="endpoint-path">POST /invoke</span>
-                </a>
                 <a href="/docs" class="endpoint-card">
                     <span class="endpoint-icon">📚</span>
                     <span class="endpoint-name">API Docs</span>
                     <span class="endpoint-path">/docs</span>
-                </a>
-                <a href="/health" class="endpoint-card">
-                    <span class="endpoint-icon">💚</span>
-                    <span class="endpoint-name">Health</span>
-                    <span class="endpoint-path">/health</span>
-                </a>
-                <a href="/info" class="endpoint-card">
-                    <span class="endpoint-icon">ℹ️</span>
-                    <span class="endpoint-name">Info</span>
-                    <span class="endpoint-path">/info</span>
-                </a>
-                <a href="/schema" class="endpoint-card">
-                    <span class="endpoint-icon">📋</span>
-                    <span class="endpoint-name">Schema</span>
-                    <span class="endpoint-path">/schema</span>
                 </a>
                 <a href="/redoc" class="endpoint-card">
                     <span class="endpoint-icon">📖</span>

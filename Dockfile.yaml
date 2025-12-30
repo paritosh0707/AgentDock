@@ -1,80 +1,25 @@
-version: "1.0"
+version: '1.0'
 agent:
-  name: invoice-copilot
-  description: "Extracts fields from invoices and returns a normalized JSON summary."
-  entrypoint: examples.invoice_copilot.app.graph:build_graph
+  name: invoice-agent
+  description: 'dockrion agent: invoice-agent'
+  entrypoint: app.main:build_agent
   framework: langgraph
 io_schema:
   input:
     type: object
-    required: [document_text]
     properties:
-      document_text: { type: string }
-      currency_hint: { type: string, enum: [INR, USD, EUR] }
-      vendor_hint:   { type: string }
+      text:
+        type: string
+    required: []
   output:
     type: object
-    required: [vendor, invoice_number, invoice_date, line_items, total_amount]
     properties:
-      vendor: { type: string }
-      invoice_number: { type: string }
-      invoice_date: { type: string }
-      total_amount: { type: number }
-      currency: { type: string }
-      line_items:
-        type: array
-        items:
-          type: object
-          required: [description, qty, unit_price, amount]
-          properties:
-            description: { type: string }
-            qty: { type: number }
-            unit_price: { type: number }
-            amount: { type: number }
-      notes: { type: string }
-arguments:
-  timeout_sec: 20
-  enable_streaming: true
-# policies:
-#   tools:
-#     allowed: [extract_invoice, summarize_invoice]
-#     deny_by_default: true
-#   safety:
-#     redact_patterns: ["\b\d{16}\b"]
-#     max_output_chars: 5000
-#     block_prompt_injection: true
-#     halt_on_violation: false
-auth:
-  mode: api_key
-  api_keys: { enabled: true, rotation_days: 30 }
-  roles:
-    - name: admin
-      permissions: [deploy, rollback, invoke, view_metrics, key_manage, read_logs, read_docs]
-    - name: developer
-      permissions: [invoke, view_metrics, read_logs]
-    - name: viewer
-      permissions: [invoke]
-  rate_limits:
-    admin: "1000/m"
-    developer: "300/m"
-    viewer: "60/m"
-# observability:
-#   langfuse:
-#     project: "invoice-copilot"
-#     public_key: "${LANGFUSE_PUBLIC}"
-#     secret_key: "${LANGFUSE_SECRET}"
-#   tracing: true
-#   log_level: info
-#   metrics: { latency: true, tokens: true, cost: true }
+      result:
+        type: string
+    required: []
+arguments: {}
 expose:
   rest: true
   streaming: sse
   port: 8080
-  host: "0.0.0.0"
-  cors:
-    origins: ["http://localhost:3000","http://localhost:5173"]
-    methods: ["GET","POST","OPTIONS"]
-metadata:
-  maintainer: "Paritosh <paritosh@example.com>"
-  version: "v1.0.0"
-  tags: ["finance","extraction","demo"]
+  host: 0.0.0.0
