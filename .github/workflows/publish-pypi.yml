@@ -13,23 +13,24 @@ on:
         options:
           - all
           - common-py
-          - schema
-          - adapters
-          - policy-engine
           - telemetry
+          - schema
+          - policy-engine
+          - adapters
           - runtime
           - sdk-python
           - cli
+      use_token:
+        description: 'Use API token instead of trusted publisher (for first publish)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  build-and-publish:
-    name: Build and Publish to PyPI
+  # Build all packages first
+  build:
+    name: Build Packages
     runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write  # Required for trusted publishing
-      contents: read
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,107 +45,382 @@ jobs:
           pip install --upgrade pip
           pip install build twine
 
-      - name: Build and publish common-py
+      - name: Build common-py
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'common-py'
         run: |
           cd packages/common-py
           python -m build
           ls -la dist/
 
-      - name: Build and publish schema
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema'
-        run: |
-          cd packages/schema
-          python -m build
-          ls -la dist/
-
-      - name: Build and publish adapters
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters'
-        run: |
-          cd packages/adapters
-          python -m build
-          ls -la dist/
-
-      - name: Build and publish policy-engine
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine'
-        run: |
-          cd packages/policy-engine
-          python -m build
-          ls -la dist/
-
-      - name: Build and publish telemetry
+      - name: Build telemetry
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'telemetry'
         run: |
           cd packages/telemetry
           python -m build
           ls -la dist/
 
-      - name: Build and publish runtime
+      - name: Build schema
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema'
+        run: |
+          cd packages/schema
+          python -m build
+          ls -la dist/
+
+      - name: Build policy-engine
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine'
+        run: |
+          cd packages/policy-engine
+          python -m build
+          ls -la dist/
+
+      - name: Build adapters
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters'
+        run: |
+          cd packages/adapters
+          python -m build
+          ls -la dist/
+
+      - name: Build runtime
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'runtime'
         run: |
           cd packages/runtime
           python -m build
           ls -la dist/
 
-      - name: Build and publish sdk-python
+      - name: Build sdk-python
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'sdk-python'
         run: |
           cd packages/sdk-python
           python -m build
           ls -la dist/
 
-      - name: Build and publish cli
+      - name: Build cli
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'cli'
         run: |
           cd packages/cli
           python -m build
           ls -la dist/
 
-      - name: Publish common-py to PyPI
+      - name: Upload common-py artifacts
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'common-py'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: actions/upload-artifact@v4
         with:
-          packages-dir: packages/common-py/dist/
+          name: dist-common-py
+          path: packages/common-py/dist/
 
-      - name: Publish schema to PyPI
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/schema/dist/
-
-      - name: Publish adapters to PyPI
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/adapters/dist/
-
-      - name: Publish policy-engine to PyPI
-        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine'
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: packages/policy-engine/dist/
-
-      - name: Publish telemetry to PyPI
+      - name: Upload telemetry artifacts
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'telemetry'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: actions/upload-artifact@v4
         with:
-          packages-dir: packages/telemetry/dist/
+          name: dist-telemetry
+          path: packages/telemetry/dist/
 
-      - name: Publish runtime to PyPI
+      - name: Upload schema artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-schema
+          path: packages/schema/dist/
+
+      - name: Upload policy-engine artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-policy-engine
+          path: packages/policy-engine/dist/
+
+      - name: Upload adapters artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-adapters
+          path: packages/adapters/dist/
+
+      - name: Upload runtime artifacts
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'runtime'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: actions/upload-artifact@v4
         with:
-          packages-dir: packages/runtime/dist/
+          name: dist-runtime
+          path: packages/runtime/dist/
 
-      - name: Publish sdk-python to PyPI
+      - name: Upload sdk-python artifacts
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'sdk-python'
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: actions/upload-artifact@v4
         with:
-          packages-dir: packages/sdk-python/dist/
+          name: dist-sdk-python
+          path: packages/sdk-python/dist/
 
-      - name: Publish cli to PyPI
+      - name: Upload cli artifacts
         if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'cli'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-cli
+          path: packages/cli/dist/
+
+  # Publish base packages (no internal dependencies)
+  publish-base:
+    name: Publish Base Packages
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write  # Required for trusted publishing
+      contents: read
+
+    steps:
+      - name: Download common-py artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'common-py'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-common-py
+          path: dist-common-py/
+        continue-on-error: true
+
+      - name: Download telemetry artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'telemetry'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-telemetry
+          path: dist-telemetry/
+        continue-on-error: true
+
+      # Publish with API Token (for first publish)
+      - name: Publish dockrion-common to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'common-py') && github.event.inputs.use_token == 'true'
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          packages-dir: packages/cli/dist/
+          packages-dir: dist-common-py/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
 
+      - name: Publish dockrion-telemetry to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'telemetry') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-telemetry/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      # Publish with Trusted Publisher (after packages exist)
+      - name: Publish dockrion-common to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'common-py') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-common-py/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-telemetry to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'telemetry') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-telemetry/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+  # Publish tier 2 packages (depend on common)
+  publish-tier2:
+    name: Publish Tier 2 Packages
+    needs: publish-base
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download schema artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-schema
+          path: dist-schema/
+        continue-on-error: true
+
+      - name: Download policy-engine artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-policy-engine
+          path: dist-policy-engine/
+        continue-on-error: true
+
+      - name: Download adapters artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-adapters
+          path: dist-adapters/
+        continue-on-error: true
+
+      # Publish with API Token
+      - name: Publish dockrion-schema to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-schema/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-policy to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-policy-engine/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-adapters to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-adapters/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      # Publish with Trusted Publisher
+      - name: Publish dockrion-schema to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'schema') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-schema/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-policy to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'policy-engine') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-policy-engine/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-adapters to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'adapters') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-adapters/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+  # Publish tier 3 packages (depend on schema, adapters)
+  publish-tier3:
+    name: Publish Tier 3 Packages
+    needs: publish-tier2
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download runtime artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'runtime'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-runtime
+          path: dist-runtime/
+        continue-on-error: true
+
+      - name: Download sdk-python artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'sdk-python'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-sdk-python
+          path: dist-sdk-python/
+        continue-on-error: true
+
+      # Publish with API Token
+      - name: Publish dockrion-runtime to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'runtime') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-runtime/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-sdk to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'sdk-python') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-sdk-python/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      # Publish with Trusted Publisher
+      - name: Publish dockrion-runtime to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'runtime') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-runtime/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      - name: Publish dockrion-sdk to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'sdk-python') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-sdk-python/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+  # Publish CLI (depends on SDK)
+  publish-cli:
+    name: Publish CLI Package
+    needs: publish-tier3
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download cli artifacts
+        if: github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'cli'
+        uses: actions/download-artifact@v4
+        with:
+          name: dist-cli
+          path: dist-cli/
+        continue-on-error: true
+
+      # Publish with API Token
+      - name: Publish dockrion-cli to PyPI (Token)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'cli') && github.event.inputs.use_token == 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-cli/
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip-existing: true
+          verbose: true
+        continue-on-error: true
+
+      # Publish with Trusted Publisher
+      - name: Publish dockrion-cli to PyPI (Trusted)
+        if: (github.event_name == 'release' || github.event.inputs.package == 'all' || github.event.inputs.package == 'cli') && github.event.inputs.use_token != 'true'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist-cli/
+          skip-existing: true
+          verbose: true
+        continue-on-error: true

@@ -1,20 +1,27 @@
 [project]
 name = "dockrion-common"
-version = "0.1.1"
+version = "0.0.1"
 description = "Common utilities for Dockrion - errors, validation, logging, and shared types"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Dockrion Team"}
+    {name = "Paritosh Sharma", email = "paritoshsharma0707@gmail.com"}
 ]
 keywords = ["dockrion", "utilities", "common"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/paritosh0707/Dockrion"
+Repository = "https://github.com/paritosh0707/Dockrion"
+Documentation = "https://github.com/paritosh0707/Dockrion#readme"
+Issues = "https://github.com/paritosh0707/Dockrion/issues"
 
 dependencies = [
     "pydantic>=2.5",

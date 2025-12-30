@@ -1,23 +1,30 @@
 [project]
 name = "dockrion-policy"
-version = "0.1.0"
+version = "0.0.1"
 description = "Policy engine for Dockrion - redaction, tool gating, and safety controls"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Dockrion Team"}
+    {name = "Paritosh Sharma", email = "paritoshsharma0707@gmail.com"}
 ]
 keywords = ["dockrion", "policy", "security", "redaction"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
 
+[project.urls]
+Homepage = "https://github.com/paritosh0707/Dockrion"
+Repository = "https://github.com/paritosh0707/Dockrion"
+Documentation = "https://github.com/paritosh0707/Dockrion#readme"
+Issues = "https://github.com/paritosh0707/Dockrion/issues"
+
 dependencies = [
-    "dockrion-common>=0.1.0",
+    "dockrion-common>=0.0.1",
 ]
 
 [project.optional-dependencies]

@@ -1,20 +1,27 @@
 [project]
 name = "dockrion-telemetry"
-version = "0.1.0"
+version = "0.0.1"
 description = "Telemetry and observability helpers for Dockrion"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [
-    {name = "Dockrion Team"}
+    {name = "Paritosh Sharma", email = "paritoshsharma0707@gmail.com"}
 ]
 keywords = ["dockrion", "telemetry", "observability", "metrics"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
+
+[project.urls]
+Homepage = "https://github.com/paritosh0707/Dockrion"
+Repository = "https://github.com/paritosh0707/Dockrion"
+Documentation = "https://github.com/paritosh0707/Dockrion#readme"
+Issues = "https://github.com/paritosh0707/Dockrion/issues"
 
 dependencies = [
     "prometheus-client>=0.20",
