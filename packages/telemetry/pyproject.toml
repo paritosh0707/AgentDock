@@ -4,7 +4,7 @@
 
 [project]
 name = "dockrion-telemetry"
-version = "0.0.1"
+version = "0.0.2"
 description = "Telemetry and observability helpers for Dockrion"
 readme = "README.md"
 requires-python = ">=3.11"

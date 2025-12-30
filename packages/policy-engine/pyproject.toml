@@ -4,7 +4,7 @@
 
 [project]
 name = "dockrion-policy"
-version = "0.0.1"
+version = "0.0.2"
 description = "Policy engine for Dockrion - redaction, tool gating, and safety controls"
 readme = "README.md"
 requires-python = ">=3.11"

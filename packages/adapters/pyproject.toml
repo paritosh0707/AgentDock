@@ -4,7 +4,7 @@
 
 [project]
 name = "dockrion-adapters"
-version = "0.0.1"
+version = "0.0.2"
 description = "Framework abstraction layer for Dockrion - uniform interface to LangGraph, LangChain, and other agent frameworks"
 requires-python = ">=3.11"
 readme = "README.md"

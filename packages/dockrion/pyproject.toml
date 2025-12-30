@@ -1,6 +1,6 @@
 [project]
 name = "dockrion"
-version = "0.0.1"
+version = "0.0.2"
 description = "Dockrion - Deploy and manage AI agents with ease"
 readme = "README.md"
 requires-python = ">=3.11"
