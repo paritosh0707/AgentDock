@@ -41,8 +41,19 @@ def create_welcome_router(config: RuntimeConfig) -> APIRouter:
 def _generate_welcome_html(config: RuntimeConfig) -> str:
     """Generate the welcome page HTML with Dockrion branding."""
     
-    # Use the actual Dockrion logo image from static files
-    logo_html = '''<img src="/static/dockrion-logo.png" alt="Dockrion Logo" class="logo-img">'''
+    # Use the Dockrion animated logo video with image fallback
+    logo_html = '''
+            <video 
+                class="logo-video" 
+                autoplay 
+                loop 
+                muted 
+                playsinline
+                poster="/static/dockrion-logo.png">
+                <source src="/static/Logo_Based_Video_Generation.mp4" type="video/mp4">
+                <!-- Fallback for browsers that don't support video -->
+                <img src="/static/dockrion-logo.png" alt="Dockrion Logo" class="logo-img">
+            </video>'''
     
     return f'''<!DOCTYPE html>
 <html lang="en" data-theme="dark">
@@ -240,6 +251,20 @@ def _generate_welcome_html(config: RuntimeConfig) -> str:
         .logo-container {{
             margin-bottom: 2rem;
             animation: fadeInUp 0.8s ease-out 0.1s both;
+        }}
+        
+        .logo-video {{
+            max-width: 420px;
+            width: 100%;
+            height: auto;
+            border-radius: 16px;
+            filter: drop-shadow(0 8px 40px var(--glow-primary));
+            transition: all 0.4s ease;
+        }}
+        
+        .logo-video:hover {{
+            filter: drop-shadow(0 12px 50px var(--glow-primary));
+            transform: scale(1.02);
         }}
         
         .logo-img {{
