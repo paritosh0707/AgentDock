@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from dockrion_common.errors import DockrionError
+from dockrion_common.errors import BuildConflictError, DockrionError
 from dockrion_common.logger import get_logger
 from dockrion_schema import DockSpec
 from jinja2 import (
@@ -32,6 +32,7 @@ from jinja2 import (
     select_autoescape,
 )
 
+from ..build import BuildResolution, BuildResolver
 from ..dependencies import DependencyConflictError, DependencyMerger
 
 logger = get_logger(__name__)
@@ -142,12 +143,18 @@ class TemplateContext:
 
         Returns:
             Dictionary with all template variables
+
+        Raises:
+            BuildConflictError: If build configuration has critical conflicts
         """
         # Get spec as dictionary
         # NOTE: exclude_none=False is required so that optional fields like 'handler'
         # are included with None values. Jinja2's StrictUndefined mode fails if
         # templates try to access missing dict keys (even in if checks).
         spec_dict = self.spec.model_dump(mode="python", exclude_none=False)
+
+        # Resolve build includes/excludes using BuildResolver
+        build_resolution = self._resolve_build_includes()
 
         # Build context with flattened access to common fields
         context = {
@@ -167,8 +174,14 @@ class TemplateContext:
             "observability": spec_dict.get("observability"),
             "expose": spec_dict.get("expose"),
             "metadata": spec_dict.get("metadata"),
+            # Build resolution - new unified system
+            "all_directories": build_resolution.directories,
+            "all_files": build_resolution.files,
+            "build_warnings": build_resolution.warnings,
+            # Legacy compatibility - agent_directories for backward compatibility
+            "agent_directories": build_resolution.directories,
+            "agent_files": build_resolution.files,
             # Computed values
-            "agent_directories": self._get_agent_directories(),
             "extra_dependencies": self._get_extra_dependencies(),
             # Merged dependencies (with conflict resolution)
             "merged_requirements": self._get_merged_requirements(),
@@ -176,40 +189,33 @@ class TemplateContext:
             "user_requirements_file": self._get_user_requirements_path(),
         }
 
+        # Log any build warnings
+        for warning in build_resolution.warnings:
+            logger.warning(f"Build warning: {warning}")
+
         # Merge extra context
         if extra_context:
             context.update(extra_context)
 
         return context
 
-    def _get_agent_directories(self) -> List[str]:
+    def _resolve_build_includes(self) -> BuildResolution:
         """
-        Determine which directories contain agent code.
+        Resolve what files and directories to include in the build.
+
+        Uses BuildResolver to combine:
+        - Entrypoint detection
+        - Explicit includes/excludes
+        - Auto-detected imports
 
         Returns:
-            List of directory paths to copy into container
+            BuildResolution with directories, files, and warnings
+
+        Raises:
+            BuildConflictError: If critical conflicts are detected
         """
-        directories: List[str] = []
-
-        # Extract from entrypoint (if using entrypoint mode)
-        entrypoint = self.spec.agent.entrypoint
-        if entrypoint and ":" in entrypoint:
-            module_path = entrypoint.rsplit(":", 1)[0]
-            # Get top-level module/package
-            top_module = module_path.split(".")[0]
-            if top_module and top_module not in directories:
-                directories.append(top_module)
-
-        # Extract from handler (if using handler mode)
-        handler = self.spec.agent.handler
-        if handler and ":" in handler:
-            module_path = handler.rsplit(":", 1)[0]
-            # Get top-level module/package
-            top_module = module_path.split(".")[0]
-            if top_module and top_module not in directories:
-                directories.append(top_module)
-
-        return directories
+        resolver = BuildResolver(self.spec, self.project_root)
+        return resolver.resolve()
 
     def _get_extra_dependencies(self) -> List[str]:
         """
@@ -678,4 +684,5 @@ __all__ = [
     "DOCKRION_VERSION",
     "TEMPLATE_FILES",
     "DependencyConflictError",
+    "BuildConflictError",
 ]

@@ -861,6 +861,103 @@ class Metadata(BaseModel):
 
 
 # =============================================================================
+# BUILD CONFIGURATION
+# =============================================================================
+
+
+class BuildIncludeConfig(BaseModel):
+    """
+    Files and directories to include in Docker build.
+
+    These are added to the auto-detected entrypoint module.
+    Use this to include additional code, data files, or configuration
+    that your agent needs at runtime.
+
+    Example:
+        ```yaml
+        build:
+          include:
+            directories:
+              - utils
+              - models
+            files:
+              - config.yaml
+              - constants.py
+            patterns:
+              - "data/*.json"
+        ```
+    """
+
+    directories: List[str] = []
+    """Additional directories to copy (e.g., ["utils", "models"])"""
+
+    files: List[str] = []
+    """Additional files to copy (e.g., ["config.yaml", "constants.py"])"""
+
+    patterns: List[str] = []
+    """Glob patterns to match files (e.g., ["*.json", "data/**"])"""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("directories", "files", "patterns")
+    @classmethod
+    def validate_non_empty_strings(cls, v: List[str]) -> List[str]:
+        """Validate that list items are non-empty strings."""
+        for item in v:
+            if not item or not item.strip():
+                raise ValidationError("Build include items cannot be empty strings")
+        return v
+
+
+class BuildConfig(BaseModel):
+    """
+    Build configuration for Docker image creation.
+
+    Controls what gets copied into the Docker image beyond
+    the auto-detected entrypoint module. Use this for:
+    - Including additional code directories
+    - Including data files or configuration
+    - Excluding test files or development artifacts
+    - Auto-detecting local imports
+
+    Example:
+        ```yaml
+        build:
+          include:
+            directories:
+              - utils
+              - models
+            files:
+              - config.yaml
+          exclude:
+            - "tests/"
+            - "**/__pycache__"
+          auto_detect_imports: false
+        ```
+    """
+
+    include: Optional[BuildIncludeConfig] = None
+    """Additional files/directories to include"""
+
+    exclude: List[str] = []
+    """Patterns to exclude (e.g., ["tests/", "**/__pycache__"])"""
+
+    auto_detect_imports: bool = False
+    """If True, parse Python files to detect and include local imports"""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("exclude")
+    @classmethod
+    def validate_exclude_patterns(cls, v: List[str]) -> List[str]:
+        """Validate that exclude patterns are non-empty strings."""
+        for pattern in v:
+            if not pattern or not pattern.strip():
+                raise ValidationError("Exclude patterns cannot be empty strings")
+        return v
+
+
+# =============================================================================
 # ROOT DOCKSPEC MODEL
 # =============================================================================
 
@@ -897,6 +994,7 @@ class DockSpec(BaseModel):
     expose: ExposeConfig
     metadata: Optional[Metadata] = None
     secrets: Optional[SecretsConfig] = None
+    build: Optional[BuildConfig] = None
 
     # Allow unknown fields for future expansion (Phase 2+)
     # When new services are built, add their models above and make them optional

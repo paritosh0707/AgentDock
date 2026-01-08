@@ -36,7 +36,7 @@ except ImportError:
 # Agent Specification (Embedded from Dockfile.yaml)
 # ============================================================================
 
-SPEC_DATA = {'version': '1.0', 'agent': {'name': 'test-agent', 'description': 'Test agent for SDK testing', 'entrypoint': 'tests.fixtures.mock_agent:build_agent', 'handler': None, 'framework': 'langgraph'}, 'io_schema': {'strict': True, 'input': {'type': 'object', 'properties': {'text': {'type': 'string'}}, 'required': [], 'items': None, 'description': None}, 'output': {'type': 'object', 'properties': {'result': {'type': 'string'}}, 'required': [], 'items': None, 'description': None}}, 'arguments': {}, 'policies': None, 'auth': None, 'observability': None, 'expose': {'rest': True, 'streaming': 'sse', 'port': 8080, 'host': '0.0.0.0', 'cors': None}, 'metadata': None, 'secrets': None}
+SPEC_DATA = {'version': '1.0', 'agent': {'name': 'test-agent', 'description': 'Test agent for SDK testing', 'entrypoint': 'tests.fixtures.mock_agent:build_agent', 'handler': None, 'framework': 'langgraph'}, 'io_schema': {'strict': True, 'input': {'type': 'object', 'properties': {'text': {'type': 'string'}}, 'required': [], 'items': None, 'description': None}, 'output': {'type': 'object', 'properties': {'result': {'type': 'string'}}, 'required': [], 'items': None, 'description': None}}, 'arguments': {}, 'policies': None, 'auth': None, 'observability': None, 'expose': {'rest': True, 'streaming': 'sse', 'port': 8080, 'host': '0.0.0.0', 'cors': None}, 'metadata': None, 'secrets': None, 'build': None}
 
 # ============================================================================
 # Create Application

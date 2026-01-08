@@ -221,3 +221,34 @@ class MissingSecretError(ValidationError):
         result = super().to_dict()
         result["missing_secrets"] = self.missing
         return result
+
+
+class BuildConflictError(DockrionError):
+    """
+    Raised when build include/exclude configuration has conflicts.
+
+    Use this for:
+    - Entrypoint module excluded from build
+    - Auto-detected imports excluded from build
+    - Critical configuration conflicts that would cause build failure
+
+    Example:
+        conflicts = ["utils (auto-detected import)", "models (auto-detected import)"]
+        raise BuildConflictError(
+            "Auto-detected imports are excluded from build",
+            conflicts=conflicts
+        )
+
+    Attributes:
+        conflicts: List of conflicting items
+    """
+
+    def __init__(self, message: str, conflicts: list | None = None):
+        self.conflicts = conflicts if conflicts is not None else []
+        super().__init__(message, code="BUILD_CONFLICT")
+
+    def to_dict(self) -> dict:
+        """Serialize error with conflicts list."""
+        result = super().to_dict()
+        result["conflicts"] = self.conflicts
+        return result

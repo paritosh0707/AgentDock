@@ -86,16 +86,31 @@ RUN groupadd --gid 1000 dockrion \
 # Copy installed packages from builder
 COPY --from=builder /usr/local/lib/python{{ python_version | default('3.12') }}/site-packages /usr/local/lib/python{{ python_version | default('3.12') }}/site-packages
 
-{% if agent_directories -%}
-# Copy agent code directories
-{% for dir in agent_directories -%}
+# -----------------------------------------------------------------------------
+# Copy Agent Code
+# -----------------------------------------------------------------------------
+{% if all_directories -%}
+# Copy agent code directories (packages)
+{% for dir in all_directories -%}
 COPY {{ agent_path | default('.') }}/{{ dir }}/ /app/{{ dir }}/
 {% endfor -%}
-{% else -%}
-# Copy agent code (auto-detected from entrypoint)
-{% set module_parts = agent.entrypoint.split(':')[0].split('.') -%}
+{% endif -%}
+
+{% if all_files -%}
+# Copy agent single-file modules
+{% for file in all_files -%}
+COPY {{ agent_path | default('.') }}/{{ file }} /app/{{ file }}
+{% endfor -%}
+{% endif -%}
+
+{% if not all_directories and not all_files -%}
+# Fallback: Copy agent code (auto-detected from entrypoint/handler)
+{% set entry_path = agent.entrypoint or agent.handler -%}
+{% if entry_path -%}
+{% set module_parts = entry_path.split(':')[0].split('.') -%}
 {% set agent_dir = module_parts[0] -%}
 COPY {{ agent_path | default('.') }}/{{ agent_dir }}/ /app/{{ agent_dir }}/
+{% endif -%}
 {% endif -%}
 
 # Copy Dockfile for runtime reference

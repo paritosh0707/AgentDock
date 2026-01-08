@@ -68,6 +68,7 @@ from .env_utils import (
 )
 from .errors import (
     AuthError,
+    BuildConflictError,
     ConflictError,
     DeploymentError,
     DockrionError,
@@ -133,6 +134,7 @@ __all__ = [
     "DeploymentError",
     "PolicyViolationError",
     "MissingSecretError",
+    "BuildConflictError",
     # Namespaced constants (recommended)
     "VersionInfo",
     "SupportedValues",

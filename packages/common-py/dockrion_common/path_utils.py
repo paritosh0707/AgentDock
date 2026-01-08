@@ -17,9 +17,17 @@ def resolve_module_path(module_path: str, base_dir: Path, max_levels: int = 5) -
     the top-level module of module_path actually exists. This is necessary
     for importing modules that may be nested in subdirectories.
 
+    Supports both package directories and single-file modules:
+    - Package: module/ directory (with or without __init__.py)
+    - Single file: module.py file
+
+    Follows Python's import semantics: when both module/ and module.py exist,
+    the package (directory) takes precedence.
+
     Args:
         module_path: Module path in format "module.submodule:callable" or "module.submodule"
-                    Examples: "app.service:handler", "myapp.agents:create_agent"
+                    Examples: "app.service:handler", "myapp.agents:create_agent",
+                              "agent:run" (single file)
         base_dir: Starting directory to search from (typically Dockfile directory)
         max_levels: Maximum number of parent directories to search (safety limit)
 
@@ -35,6 +43,10 @@ def resolve_module_path(module_path: str, base_dir: Path, max_levels: int = 5) -
         >>> # If "app" exists at "/project/app", walks up and returns that
         >>> resolve_module_path("app.service:handler", Path("/project/examples/agent1"))
         Path("/project")
+
+        >>> # For single-file module "agent:run" with agent.py
+        >>> resolve_module_path("agent:run", Path("/project"))
+        Path("/project")
     """
     # Extract the top-level module name
     # "app.service:handler" -> "app.service" -> "app"
@@ -44,8 +56,15 @@ def resolve_module_path(module_path: str, base_dir: Path, max_levels: int = 5) -
     # Start from base_dir and walk up to find the module
     project_root = base_dir
     for _ in range(max_levels):
-        # Check if the top-level module exists at this level
-        if (project_root / top_level_module).exists():
+        pkg_path = project_root / top_level_module
+        file_path = project_root / f"{top_level_module}.py"
+
+        # Check for package first (Python semantics: package takes precedence)
+        if pkg_path.is_dir():
+            return project_root
+
+        # Check for single-file module
+        if file_path.is_file():
             return project_root
 
         # Check if we've reached the filesystem root

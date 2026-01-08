@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -214,3 +213,5 @@ __marimo__/
 
 # uv workspace
 .uv/
+
+.cursor/
