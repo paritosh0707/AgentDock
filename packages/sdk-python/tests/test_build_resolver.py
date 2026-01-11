@@ -1,16 +1,17 @@
 """Tests for resolver.py - BuildResolver class."""
 
-import pytest
 from pathlib import Path
+from typing import Any
 
+import pytest
 from dockrion_common import BuildConflictError
 from dockrion_schema import DockSpec
 
-from dockrion_sdk.build.resolver import BuildResolver, BuildResolution
+from dockrion_sdk.build.resolver import BuildResolution, BuildResolver
 
 
 def create_spec(
-    entrypoint: str = "app:handler",
+    entrypoint: str | None = "app:handler",
     handler: str | None = None,
     include_dirs: list[str] | None = None,
     include_files: list[str] | None = None,
@@ -19,13 +20,17 @@ def create_spec(
     auto_detect_imports: bool = False,
 ) -> DockSpec:
     """Create a DockSpec for testing."""
-    spec_dict = {
+    agent_dict: dict[str, Any] = {
+        "name": "test-agent",
+        "framework": "langgraph",
+    }
+
+    if entrypoint:
+        agent_dict["entrypoint"] = entrypoint
+
+    spec_dict: dict[str, Any] = {
         "version": "1.0",
-        "agent": {
-            "name": "test-agent",
-            "entrypoint": entrypoint,
-            "framework": "langgraph",
-        },
+        "agent": agent_dict,
         "io_schema": {
             "input": {"type": "object"},
             "output": {"type": "object"},
@@ -35,11 +40,12 @@ def create_spec(
 
     if handler:
         spec_dict["agent"]["handler"] = handler
-        del spec_dict["agent"]["entrypoint"]
+        if "entrypoint" in spec_dict["agent"]:
+            del spec_dict["agent"]["entrypoint"]
 
     # Add build config if any build options are provided
     if any([include_dirs, include_files, include_patterns, exclude, auto_detect_imports]):
-        build_config = {"auto_detect_imports": auto_detect_imports}
+        build_config: dict[str, Any] = {"auto_detect_imports": auto_detect_imports}
 
         if include_dirs or include_files or include_patterns:
             build_config["include"] = {}

@@ -1,11 +1,12 @@
 """Tests for import_detector.py - AST-based import detection."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from dockrion_sdk.build.import_detector import (
-    find_entry_file,
     detect_local_imports,
+    find_entry_file,
 )
 
 

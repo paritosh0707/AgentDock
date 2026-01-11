@@ -232,7 +232,7 @@ class TestPydanticModels:
     """Test Pydantic model serialization."""
 
     def test_pydantic_v2_model(self):
-        pydantic = pytest.importorskip("pydantic")
+        pytest.importorskip("pydantic")
         from pydantic import BaseModel
 
         class User(BaseModel):
@@ -244,7 +244,7 @@ class TestPydanticModels:
         assert result == {"name": "Alice", "age": 30}
 
     def test_nested_pydantic(self):
-        pydantic = pytest.importorskip("pydantic")
+        pytest.importorskip("pydantic")
         from pydantic import BaseModel
 
         class Address(BaseModel):
@@ -259,7 +259,7 @@ class TestPydanticModels:
         assert result == {"name": "Bob", "address": {"city": "NYC"}}
 
     def test_pydantic_with_optional(self):
-        pydantic = pytest.importorskip("pydantic")
+        pytest.importorskip("pydantic")
         from pydantic import BaseModel
 
         class Config(BaseModel):
@@ -277,7 +277,7 @@ class TestLangChainMessages:
     """Test LangChain message serialization."""
 
     def test_human_message(self):
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import HumanMessage  # type: ignore[import-untyped]
 
         msg = HumanMessage(content="Hello, world!")
@@ -288,7 +288,7 @@ class TestLangChainMessages:
         assert result["type"] == "human"
 
     def test_ai_message(self):
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import AIMessage  # type: ignore[import-untyped]
 
         msg = AIMessage(content="I'm an AI assistant.")
@@ -299,7 +299,7 @@ class TestLangChainMessages:
         assert result["type"] == "ai"
 
     def test_message_list(self):
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import AIMessage, HumanMessage  # type: ignore[import-untyped]
 
         messages = [
@@ -315,7 +315,7 @@ class TestLangChainMessages:
         assert result["messages"][1]["type"] == "ai"
 
     def test_system_message(self):
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import SystemMessage  # type: ignore[import-untyped]
 
         msg = SystemMessage(content="You are a helpful assistant.")
@@ -459,7 +459,7 @@ class TestSerializeForJson:
         assert result["id"] == "12345678-1234-5678-1234-567812345678"
 
     def test_with_nested_pydantic(self):
-        pydantic = pytest.importorskip("pydantic")
+        pytest.importorskip("pydantic")
         from pydantic import BaseModel
 
         class Item(BaseModel):
@@ -473,7 +473,7 @@ class TestSerializeForJson:
         assert result["items"][0]["price"] == 9.99
 
     def test_with_langchain_messages(self):
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import AIMessage, HumanMessage  # type: ignore[import-untyped]
 
         data = {
@@ -494,7 +494,7 @@ class TestIntegrationScenarios:
 
     def test_langgraph_chat_output(self):
         """Test typical LangGraph chat agent output."""
-        langchain = pytest.importorskip("langchain_core")
+        pytest.importorskip("langchain_core")
         from langchain_core.messages import AIMessage, HumanMessage  # type: ignore[import-untyped]
 
         # Simulate LangGraph chat output

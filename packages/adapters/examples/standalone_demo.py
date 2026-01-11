@@ -35,7 +35,7 @@ def build_demo_agent():
 
         def invoke(self, payload: dict) -> dict:
             """Process invoice and extract information"""
-            document = payload.get("document_text", "")
+            payload.get("document_text", "")
 
             return {
                 "vendor": payload.get("vendor_hint", "Unknown Vendor"),

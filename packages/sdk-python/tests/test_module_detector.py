@@ -1,11 +1,12 @@
 """Tests for module_detector.py - Module type detection."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from dockrion_sdk.build.module_detector import (
-    ModuleType,
     ModuleInfo,
+    ModuleType,
     detect_module_type,
     resolve_entrypoint_modules,
 )

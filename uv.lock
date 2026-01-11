@@ -444,7 +444,7 @@ wheels = [
 
 [[package]]
 name = "dockrion"
-version = "0.0.2"
+version = "0.0.3"
 source = { editable = "packages/dockrion" }
 dependencies = [
     { name = "jinja2" },

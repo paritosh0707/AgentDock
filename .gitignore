@@ -214,4 +214,8 @@ __marimo__/
 # uv workspace
 .uv/
 
+# macOS
+.DS_Store
+**/.DS_Store
+
 .cursor/

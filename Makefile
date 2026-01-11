@@ -1,4 +1,4 @@
-.PHONY: bootstrap bootstrap-dev test test-cov test-verbose lint typecheck ci clean help build build-check
+.PHONY: bootstrap bootstrap-dev test test-cov test-verbose lint typecheck ci clean help build build-check pypi-local install-local
 
 # Default target
 help:
@@ -27,6 +27,10 @@ help:
 	@echo "  make publish-test  - Publish to TestPyPI (for testing)"
 	@echo "  make publish       - Publish to PyPI (production)"
 	@echo ""
+	@echo "Local Testing:"
+	@echo "  make pypi-local    - Start local PyPI server on port 8099 (run in separate terminal)"
+	@echo "  make install-local - Install dockrion from local PyPI server"
+	@echo ""
 	@echo "Package-specific testing:"
 	@echo "  make test-adapters   - Run adapters tests"
 	@echo "  make test-cli        - Run CLI tests"
@@ -54,56 +58,56 @@ bootstrap-test:
 
 # Run all tests (sequentially per package to avoid import conflicts)
 test:
-	@echo "=== Testing common-py ===" && pytest packages/common-py/tests -q && \
-	echo "=== Testing schema ===" && pytest packages/schema/tests -q && \
-	echo "=== Testing adapters ===" && pytest packages/adapters/tests -q && \
-	echo "=== Testing policy-engine ===" && pytest packages/policy-engine/tests -q && \
-	echo "=== Testing telemetry ===" && pytest packages/telemetry/tests -q && \
-	echo "=== Testing runtime ===" && pytest packages/runtime/tests -q && \
-	echo "=== Testing sdk-python ===" && pytest packages/sdk-python/tests -q && \
-	echo "=== Testing cli ===" && pytest packages/cli/tests -q && \
+	@echo "=== Testing common-py ===" && uv run pytest packages/common-py/tests -q && \
+	echo "=== Testing schema ===" && uv run pytest packages/schema/tests -q && \
+	echo "=== Testing adapters ===" && uv run pytest packages/adapters/tests -q && \
+	echo "=== Testing policy-engine ===" && uv run pytest packages/policy-engine/tests -q && \
+	echo "=== Testing telemetry ===" && uv run pytest packages/telemetry/tests -q && \
+	echo "=== Testing runtime ===" && uv run pytest packages/runtime/tests -q && \
+	echo "=== Testing sdk-python ===" && uv run pytest packages/sdk-python/tests -q && \
+	echo "=== Testing cli ===" && uv run pytest packages/cli/tests -q && \
 	echo "=== All tests passed! ==="
 
 # Run tests with coverage
 test-cov:
-	pytest --cov=packages --cov-report=term-missing --cov-report=html
+	uv run pytest --cov=packages --cov-report=term-missing --cov-report=html
 
 # Run tests with verbose output
 test-verbose:
-	pytest -v --tb=long
+	uv run pytest -v --tb=long
 
 # Run tests excluding slow tests
 test-fast:
-	pytest -m "not slow"
+	uv run pytest -m "not slow"
 
 # Run integration tests only
 test-integration:
-	pytest -m "integration"
+	uv run pytest -m "integration"
 
 # Package-specific test targets
 test-adapters:
-	pytest packages/adapters/tests -v
+	uv run pytest packages/adapters/tests -v
 
 test-cli:
-	pytest packages/cli/tests -v
+	uv run pytest packages/cli/tests -v
 
 test-common:
-	pytest packages/common-py/tests -v
+	uv run pytest packages/common-py/tests -v
 
 test-schema:
-	pytest packages/schema/tests -v
+	uv run pytest packages/schema/tests -v
 
 test-sdk:
-	pytest packages/sdk-python/tests -v
+	uv run pytest packages/sdk-python/tests -v
 
 test-runtime:
-	pytest packages/runtime/tests -v
+	uv run pytest packages/runtime/tests -v
 
 test-policy:
-	pytest packages/policy-engine/tests -v
+	uv run pytest packages/policy-engine/tests -v
 
 test-telemetry:
-	pytest packages/telemetry/tests -v
+	uv run pytest packages/telemetry/tests -v
 
 # Linting (ignore common acceptable patterns)
 # E501: line too long (handled by formatter)
@@ -115,7 +119,7 @@ test-telemetry:
 # B017: blind exception (acceptable in tests)
 # B027: empty method without abstract decorator (intentional)
 lint:
-	ruff check packages/ --ignore E501,E402,F401,F841,B904,B008,B017,B027
+	uv run ruff check packages/ --ignore E501,E402,F401,F841,B904,B008,B017,B027
 
 # Type checking
 typecheck:
@@ -140,7 +144,7 @@ typecheck:
 
 # Format code
 format:
-	ruff format packages/
+	uv run ruff format packages/
 
 # Run all CI checks
 ci: lint typecheck test
@@ -153,16 +157,16 @@ ci: lint typecheck test
 # Build the dockrion package for distribution
 build:
 	@echo "Building dockrion package..."
-	cd packages/dockrion && python build_package.py
+	cd packages/dockrion && uv run python build_package.py
 	@echo ""
 	@echo "Built packages:"
-	@ls -la packages/dockrion/dist/
+	@ls -la dist/
 
 # Build and verify package contents
 build-check: build
 	@echo ""
 	@echo "Verifying package contents..."
-	@cd packages/dockrion && python -c "\
+	@uv run python -c "\
 import zipfile, glob, sys; \
 wheels = glob.glob('dist/*.whl'); \
 wheel = wheels[0] if wheels else sys.exit('No wheel found'); \
@@ -176,17 +180,33 @@ sys.exit(f'Missing: {missing}') if missing else print('✓ All packages included
 print(f'Total files: {len(files)}')"
 	@echo ""
 	@echo "Checking with twine..."
-	cd packages/dockrion && twine check dist/*
+	uv run twine check dist/*
 
 # Publish to TestPyPI (for testing before real publish)
 publish-test: build-check
 	@echo "Publishing to TestPyPI..."
-	cd packages/dockrion && twine upload --repository testpypi dist/*
+	uv run twine upload --repository testpypi dist/*
 
 # Publish to PyPI (production)
 publish: build-check
 	@echo "Publishing to PyPI..."
-	cd packages/dockrion && twine upload dist/*
+	uv run twine upload dist/*
+
+# ============================================================================
+# Local PyPI Server (for testing before publish)
+# ============================================================================
+
+# Start local PyPI server (run this in a separate terminal)
+pypi-local: build
+	@echo "Starting local PyPI server on http://localhost:8099"
+	@echo "Install from another project with:"
+	@echo "  uv pip install --index-url http://localhost:8099/simple/ --trusted-host localhost dockrion"
+	@echo ""
+	uv run python -m pypiserver run -p 8099 ./dist
+
+# Install from local PyPI server (for testing in current environment)
+install-local:
+	uv pip install --index-url http://localhost:8099/simple/ --trusted-host localhost dockrion
 
 # ============================================================================
 # Cleanup
@@ -200,7 +220,11 @@ clean:
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name "build" -exec rm -rf {} + 2>/dev/null || true
+	# Only remove build directories that are actual build artifacts, not source code
+	# Remove build/ at root level and in packages/dockrion/, but exclude source code directories
+	rm -rf ./build 2>/dev/null || true
+	rm -rf packages/dockrion/build 2>/dev/null || true
+	# Also remove build directories in .mypy_cache (type checker cache)
+	find . -type d -path "*/.mypy_cache/*/build" -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name ".coverage" -delete 2>/dev/null || true
 	rm -rf dist/
-	rm -rf packages/dockrion/dist/

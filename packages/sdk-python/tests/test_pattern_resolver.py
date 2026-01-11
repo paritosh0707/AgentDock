@@ -1,12 +1,13 @@
 """Tests for pattern_resolver.py - Glob pattern resolution and matching."""
 
-import pytest
 from pathlib import Path
 
+import pytest
+
 from dockrion_sdk.build.pattern_resolver import (
-    resolve_glob_patterns,
-    matches_pattern,
     filter_by_excludes,
+    matches_pattern,
+    resolve_glob_patterns,
 )
 
 

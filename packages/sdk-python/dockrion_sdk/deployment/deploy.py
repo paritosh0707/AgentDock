@@ -163,7 +163,11 @@ def deploy(
     try:
         # Generate Dockerfile with correct paths and dev mode settings
         dockerfile_content = renderer.render_dockerfile(
-            spec, agent_path=relative_agent_path, dev_mode=dev_mode, local_packages=local_packages
+            spec,
+            agent_path=relative_agent_path,
+            dev_mode=dev_mode,
+            local_packages=local_packages,
+            project_root=agent_dir,
         )
 
         # Build the image

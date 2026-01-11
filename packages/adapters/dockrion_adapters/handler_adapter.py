@@ -117,7 +117,7 @@ class HandlerAdapter:
             raise AdapterLoadError(
                 f"Invalid handler format: {handler_path}. "
                 f"Expected 'module.path:callable'. Error: {e}"
-            )
+            ) from e
 
         # Step 2: Import module
         try:
@@ -128,12 +128,12 @@ class HandlerAdapter:
             raise ModuleNotFoundError(
                 module_path=module_path,
                 hint=f"Ensure module is in Python path. Original error: {e}",
-            )
+            ) from e
         except Exception as e:
             logger.error("Unexpected error importing module", module=module_path, error=str(e))
             raise AdapterLoadError(
                 f"Failed to import module '{module_path}': {type(e).__name__}: {e}"
-            )
+            ) from e
 
         # Step 3: Get callable from module
         if not hasattr(module, callable_name):
@@ -155,7 +155,7 @@ class HandlerAdapter:
             logger.error("Failed to get callable", callable=callable_name, error=str(e))
             raise AdapterLoadError(
                 f"Failed to get callable '{callable_name}' from module '{module_path}': {e}"
-            )
+            ) from e
 
         # Step 4: Validate it's callable
         if not callable(handler):
@@ -294,7 +294,7 @@ class HandlerAdapter:
 
         try:
             # Try to get running loop
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()
             # We're already in an async context - run in separate thread
             # to avoid nested event loop issues
             import concurrent.futures

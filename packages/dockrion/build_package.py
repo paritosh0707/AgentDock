@@ -64,7 +64,7 @@ def build():
     """Build the package."""
     print("🔨 Building package...")
     result = subprocess.run(
-        [sys.executable, "-m", "build"],
+        ["uv", "build"],
         cwd=PACKAGE_DIR,
         capture_output=False,
     )
@@ -85,7 +85,7 @@ def main():
 
         if result == 0:
             print("\n✅ Build successful!")
-            print(f"   Packages are in: {PACKAGE_DIR / 'dist'}")
+            print(f"   Packages are in: {PACKAGE_DIR.parent.parent / 'dist'}")
         else:
             print("\n❌ Build failed!")
 

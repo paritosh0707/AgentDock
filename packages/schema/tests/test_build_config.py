@@ -1,9 +1,9 @@
 """Tests for BuildConfig and BuildIncludeConfig models."""
 
 import pytest
+from dockrion_common.errors import ValidationError as DockrionValidationError
 from pydantic import ValidationError as PydanticValidationError
 
-from dockrion_common.errors import ValidationError as DockrionValidationError
 from dockrion_schema.dockfile_v1 import (
     BuildConfig,
     BuildIncludeConfig,
@@ -77,12 +77,13 @@ class TestBuildIncludeConfig:
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed for extensibility."""
-        config = BuildIncludeConfig(
-            directories=["utils"],
-            future_field="value",
+        # Use model_construct or dict unpacking to bypass type checker
+        config = BuildIncludeConfig.model_validate(
+            {"directories": ["utils"], "future_field": "value"}
         )
 
         assert config.directories == ["utils"]
+        assert config.model_extra == {"future_field": "value"}
 
 
 class TestBuildConfig:
@@ -129,6 +130,7 @@ class TestBuildConfig:
             auto_detect_imports=True,
         )
 
+        assert config.include is not None
         assert config.include.directories == ["utils", "models"]
         assert config.include.files == ["config.yaml"]
         assert config.include.patterns == ["data/*.json"]
@@ -144,12 +146,12 @@ class TestBuildConfig:
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed for extensibility."""
-        config = BuildConfig(
-            exclude=["tests/"],
-            future_option=True,
+        config = BuildConfig.model_validate(
+            {"exclude": ["tests/"], "future_option": True}
         )
 
         assert config.exclude == ["tests/"]
+        assert config.model_extra == {"future_option": True}
 
 
 class TestDockSpecWithBuild:
@@ -280,6 +282,7 @@ class TestDockSpecWithBuild:
         restored = DockSpec.model_validate(data)
 
         assert restored.build is not None
+        assert restored.build.include is not None
         assert restored.build.include.directories == ["utils"]
         assert restored.build.exclude == ["tests/"]
         assert restored.build.auto_detect_imports is True

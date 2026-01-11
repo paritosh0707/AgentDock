@@ -272,7 +272,7 @@ class LangGraphAdapter:
             raise AdapterLoadError(
                 f"Invalid entrypoint format: {entrypoint}. "
                 f"Expected 'module.path:callable'. Error: {e}"
-            )
+            ) from e
 
         # Step 2: Import module
         try:
@@ -283,12 +283,12 @@ class LangGraphAdapter:
             raise ModuleNotFoundError(
                 module_path=module_path,
                 hint=f"Ensure module is in Python path. Original error: {e}",
-            )
+            ) from e
         except Exception as e:
             logger.error("Unexpected error importing module", module=module_path, error=str(e))
             raise AdapterLoadError(
                 f"Failed to import module '{module_path}': {type(e).__name__}: {e}"
-            )
+            ) from e
 
         # Step 3: Get factory function
         if not hasattr(module, callable_name):
@@ -311,7 +311,7 @@ class LangGraphAdapter:
             logger.error("Failed to get callable", callable=callable_name, error=str(e))
             raise AdapterLoadError(
                 f"Failed to get callable '{callable_name}' from module '{module_path}': {e}"
-            )
+            ) from e
 
         # Step 4: Call factory to get agent
         try:

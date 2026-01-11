@@ -274,10 +274,10 @@ class BuildResolver:
 
         if conflicts:
             raise BuildConflictError(
-                f"Cannot exclude entrypoint module(s):\n"
+                "Cannot exclude entrypoint module(s):\n"
                 + "\n".join(conflicts)
                 + f"\n\nRequired by entrypoint: {entrypoint}\n"
-                f"Remove from 'build.exclude' to fix.",
+                "Remove from 'build.exclude' to fix.",
                 conflicts=[c.strip("- ") for c in conflicts],
             )
 
@@ -305,7 +305,7 @@ class BuildResolver:
 
         if conflicts:
             raise BuildConflictError(
-                f"Auto-detected imports are excluded from build:\n"
+                "Auto-detected imports are excluded from build:\n"
                 + "\n".join(conflicts)
                 + "\n\nOptions:\n"
                 "  1. Remove from 'build.exclude'\n"
