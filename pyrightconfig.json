@@ -8,7 +8,8 @@
         "./packages/common-py",
         "./packages/adapters",
         "./packages/policy-engine",
-        "./packages/runtime"
+        "./packages/runtime",
+        "./packages/events"
       ]
     }
   ],

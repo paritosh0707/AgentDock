@@ -19,7 +19,7 @@ Usage:
 
 import importlib
 import inspect
-from typing import Any, Dict, Optional
+from typing import Any, AsyncIterator, Callable, Dict, Optional
 
 from dockrion_common import get_logger, validate_entrypoint
 
@@ -35,6 +35,393 @@ from .errors import (
 from .serialization import serialize_for_json
 
 logger = get_logger("langgraph-adapter")
+
+
+# =============================================================================
+# LangGraph Stream Output Handlers
+# =============================================================================
+# These helper functions process different stream output formats from LangGraph.
+# LangGraph's .stream() method returns different formats based on stream_mode:
+#
+# 1. No stream_mode (default): {node_name: output_dict}
+# 2. stream_mode=["updates"]: ("updates", {node_name: output_dict})
+# 3. stream_mode=["messages"]: ("messages", message_chunk or (message, metadata))
+# 4. stream_mode=["values"]: ("values", full_state_dict)
+# 5. Multiple modes: tuples for each mode
+# =============================================================================
+
+
+def _process_langgraph_stream_tuple(
+    mode: str,
+    data: Any,
+    result_queue: Any,
+    stream_context: Any,
+    emit_steps: bool,
+    emit_tokens: bool,
+    logger: Any,
+    events_filter: Any = None,
+) -> None:
+    """
+    Process a (mode, data) tuple from LangGraph multi-mode streaming.
+
+    Args:
+        mode: The stream mode ("messages", "updates", "values", "custom", etc.)
+        data: The data associated with this mode
+        result_queue: Queue to put processed events
+        stream_context: Optional StreamContext for emitting events
+        emit_steps: Whether step events should be emitted
+        emit_tokens: Whether token events should be emitted
+        logger: Logger instance
+        events_filter: Optional filter for native custom events
+    """
+    if mode == "messages":
+        # Token streaming from LLM - handle various message formats
+        _process_messages_stream(data, result_queue, stream_context, emit_tokens, logger)
+
+    elif mode == "updates":
+        # Node updates: {node_name: output_dict}
+        _process_updates_stream(data, result_queue, stream_context, emit_steps, logger)
+
+    elif mode == "values":
+        # Full state values - emit as checkpoint/state event
+        _process_values_stream(data, result_queue, logger)
+
+    elif mode == "custom":
+        # Native backend events (progress, checkpoint, user custom)
+        _process_native_custom_mode(data, result_queue, events_filter, logger)
+
+    else:
+        # Unknown mode - log for debugging
+        logger.debug(f"Unknown stream mode: {mode}", data_type=type(data).__name__)
+
+
+def _process_messages_stream(
+    data: Any,
+    result_queue: Any,
+    stream_context: Any,
+    emit_tokens: bool,
+    logger: Any,
+) -> None:
+    """
+    Process "messages" stream mode output (token streaming).
+
+    LangGraph messages mode can return:
+    - A message object with .content attribute
+    - A tuple of (message, metadata)
+    - A list of message chunks
+
+    Args:
+        data: Message data from LangGraph
+        result_queue: Queue to put token events
+        stream_context: Optional StreamContext for emitting events
+        emit_tokens: Whether tokens should be emitted
+        logger: Logger instance
+    """
+    if not emit_tokens:
+        return
+
+    token_content: str | None = None
+
+    # Handle tuple format: (message, metadata)
+    if isinstance(data, tuple) and len(data) >= 1:
+        msg = data[0]
+        if hasattr(msg, "content"):
+            content = getattr(msg, "content", None)
+            if content:
+                token_content = str(content)
+        elif isinstance(msg, str):
+            token_content = msg
+    # Handle string directly
+    elif isinstance(data, str):
+        token_content = data
+    # Handle dict with content key
+    elif isinstance(data, dict) and "content" in data:
+        content = data["content"]
+        if content:
+            token_content = str(content)
+    # Handle direct message object with content attribute
+    elif hasattr(data, "content"):
+        content = getattr(data, "content", None)
+        if content:
+            token_content = str(content)
+    # Handle AIMessageChunk or similar with text attribute
+    elif hasattr(data, "text"):
+        text = getattr(data, "text", None)
+        if text:
+            token_content = str(text)
+
+    if token_content:
+        # Emit through context if available
+        if stream_context is not None:
+            try:
+                stream_context.sync_emit_token(token_content)
+            except Exception as e:
+                logger.debug(f"Failed to emit token through context: {e}")
+
+        # Put token event in queue
+        result_queue.put({
+            "type": "token",
+            "content": token_content,
+        })
+
+
+def _process_updates_stream(
+    data: Any,
+    result_queue: Any,
+    stream_context: Any,
+    emit_steps: bool,
+    logger: Any,
+) -> None:
+    """
+    Process "updates" stream mode output (node updates).
+
+    Updates mode returns: {node_name: output_dict}
+
+    Args:
+        data: Update data (dict of node outputs)
+        result_queue: Queue to put step events
+        stream_context: Optional StreamContext for emitting events
+        emit_steps: Whether step events should be emitted
+        logger: Logger instance
+    """
+    if not isinstance(data, dict):
+        logger.debug("Updates stream data is not a dict", data_type=type(data).__name__)
+        return
+
+    for node_name, output in data.items():
+        # Emit step event through context if available and steps are allowed
+        if stream_context is not None and emit_steps:
+            try:
+                stream_context.sync_emit_step(
+                    node_name=node_name,
+                    output_keys=list(output.keys()) if isinstance(output, dict) else [],
+                )
+            except Exception as e:
+                logger.debug(f"Failed to emit step event: {e}")
+
+        # Put step event in queue if allowed
+        if emit_steps:
+            result_queue.put({
+                "type": "step",
+                "node": node_name,
+                "output": serialize_for_json(output) if isinstance(output, dict) else output,
+            })
+
+
+def _process_values_stream(
+    data: Any,
+    result_queue: Any,
+    logger: Any,
+) -> None:
+    """
+    Process "values" stream mode output (full state).
+
+    Values mode returns the full state dict at each step.
+    We emit this as a "state" event type.
+
+    Args:
+        data: Full state data
+        result_queue: Queue to put state events
+        logger: Logger instance
+    """
+    if isinstance(data, dict):
+        result_queue.put({
+            "type": "state",
+            "data": serialize_for_json(data),
+        })
+    else:
+        logger.debug("Values stream data is not a dict", data_type=type(data).__name__)
+
+
+def _process_langgraph_default_stream(
+    step_output: Dict[str, Any],
+    result_queue: Any,
+    stream_context: Any,
+    emit_steps: bool,
+    logger: Any,
+) -> None:
+    """
+    Process default LangGraph stream output (no stream_mode specified).
+
+    Default streaming returns: {node_name: output_dict}
+
+    Args:
+        step_output: Dict mapping node names to outputs
+        result_queue: Queue to put events
+        stream_context: Optional StreamContext for emitting events
+        emit_steps: Whether step events should be emitted
+        logger: Logger instance
+    """
+    for node_name, output in step_output.items():
+        # Emit step event through context if available and steps are allowed
+        if stream_context is not None and emit_steps:
+            try:
+                stream_context.sync_emit_step(
+                    node_name=node_name,
+                    output_keys=list(output.keys()) if isinstance(output, dict) else [],
+                )
+            except Exception as e:
+                logger.debug(f"Failed to emit step event: {e}")
+
+        # Put step event in queue if allowed
+        if emit_steps:
+            result_queue.put({
+                "type": "step",
+                "node": node_name,
+                "output": serialize_for_json(output) if isinstance(output, dict) else output,
+            })
+
+
+def _drain_user_events(
+    stream_context: Any,
+    result_queue: Any,
+    logger: Any,
+) -> None:
+    """
+    Drain user-emitted custom events from StreamContext queue.
+
+    Args:
+        stream_context: StreamContext that may have queued events
+        result_queue: Queue to put custom events
+        logger: Logger instance
+    """
+    if stream_context is None:
+        return
+
+    if not hasattr(stream_context, "drain_queued_events"):
+        return
+
+    try:
+        user_events = stream_context.drain_queued_events()
+        for event in user_events:
+            result_queue.put({
+                "type": "custom",
+                "event_type": getattr(event, "type", "custom"),
+                "data": event.model_dump() if hasattr(event, "model_dump") else {},
+            })
+    except Exception as e:
+        logger.debug(f"Failed to drain user events: {e}")
+
+
+# =============================================================================
+# Native Event Handlers (for LangGraph "custom" mode)
+# =============================================================================
+# When using native LangGraph backend (LangGraphBackend), events emitted via
+# StreamContext appear in the stream as ("custom", (event_type, event_data)).
+# These handlers process those native events into the standard output format.
+
+
+def _process_native_progress(event_data: Dict[str, Any], result_queue: Any) -> None:
+    """Process native progress event."""
+    result_queue.put({
+        "type": "progress",
+        "step": event_data.get("step", ""),
+        "progress": event_data.get("progress", 0.0),
+        "message": event_data.get("message"),
+    })
+
+
+def _process_native_checkpoint(event_data: Dict[str, Any], result_queue: Any) -> None:
+    """Process native checkpoint event."""
+    result_queue.put({
+        "type": "checkpoint",
+        "name": event_data.get("name", ""),
+        "data": event_data.get("data", {}),
+    })
+
+
+def _process_native_token(event_data: Dict[str, Any], result_queue: Any) -> None:
+    """Process native token event (fallback path)."""
+    result_queue.put({
+        "type": "token",
+        "content": event_data.get("content", ""),
+    })
+
+
+def _process_native_step(event_data: Dict[str, Any], result_queue: Any) -> None:
+    """Process native step event (fallback path)."""
+    result_queue.put({
+        "type": "step",
+        "node": event_data.get("node_name", event_data.get("node", "")),
+        "output": event_data.get("output", {}),
+    })
+
+
+def _process_native_user_custom(
+    event_name: str,
+    event_data: Dict[str, Any],
+    result_queue: Any,
+) -> None:
+    """Process user-defined custom event from native backend."""
+    result_queue.put({
+        "type": "custom",
+        "event_type": event_name,
+        "data": event_data,
+    })
+
+
+# Registry of known native event handlers
+_NATIVE_EVENT_HANDLERS: Dict[str, Callable[[Dict[str, Any], Any], None]] = {
+    "progress": _process_native_progress,
+    "checkpoint": _process_native_checkpoint,
+    "token": _process_native_token,
+    "step": _process_native_step,
+}
+
+
+def _process_native_custom_mode(
+    data: Any,
+    result_queue: Any,
+    events_filter: Any,
+    logger: Any,
+) -> None:
+    """
+    Process LangGraph "custom" mode output from native backend.
+
+    Native backend emits: (event_type, event_data)
+    - Known events: ("progress", {...}), ("checkpoint", {...})
+    - User custom: ("custom:fraud_check", {...})
+
+    Args:
+        data: The data from ("custom", data) tuple
+        result_queue: Queue to put processed events
+        events_filter: Filter to check if event is allowed
+        logger: Logger instance
+    """
+    # Validate format: expect (event_type, event_data)
+    if not isinstance(data, tuple) or len(data) != 2:
+        logger.debug(f"Invalid native custom event format: {type(data).__name__}")
+        return
+
+    event_type, event_data = data
+
+    # Ensure event_data is a dict
+    if not isinstance(event_data, dict):
+        event_data = {"value": event_data}
+
+    # Check if event is allowed
+    if events_filter is not None:
+        if event_type.startswith("custom:"):
+            custom_name = event_type[7:]
+            if not events_filter.is_allowed("custom", custom_name):
+                return
+        elif not events_filter.is_allowed(event_type):
+            return
+
+    # Route to appropriate handler
+    if event_type in _NATIVE_EVENT_HANDLERS:
+        _NATIVE_EVENT_HANDLERS[event_type](event_data, result_queue)
+    elif event_type.startswith("custom:"):
+        custom_name = event_type[7:]
+        _process_native_user_custom(custom_name, event_data, result_queue)
+    else:
+        # Unknown type - treat as generic custom
+        _process_native_user_custom(event_type, event_data, result_queue)
+
+
+# =============================================================================
+# LangGraph Adapter Class
+# =============================================================================
 
 
 class LangGraphAdapter:
@@ -375,7 +762,10 @@ class LangGraphAdapter:
         )
 
     def invoke(
-        self, payload: Dict[str, Any], config: Optional[Dict[str, Any]] = None
+        self,
+        payload: Dict[str, Any],
+        config: Optional[Dict[str, Any]] = None,
+        context: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Invoke LangGraph agent with input payload and optional config.
@@ -397,6 +787,7 @@ class LangGraphAdapter:
                 - recursion_limit: Max graph iterations (default: 25)
                 - run_name: For tracing/debugging
                 - configurable: Dict of custom config values
+            context: Optional StreamContext for emitting events
 
         Returns:
             Output dictionary (matches io_schema.output)
@@ -429,6 +820,9 @@ class LangGraphAdapter:
             ...     {"input": "complex task"},
             ...     config={"recursion_limit": 50}
             ... )
+
+            >>> # With StreamContext
+            >>> result = adapter.invoke(payload, context=stream_context)
         """
         # Step 1: Check adapter is loaded
         if self._runner is None:
@@ -445,6 +839,15 @@ class LangGraphAdapter:
             )
             config = None  # Ignore config if not supported
 
+        # Set thread-local context if provided
+        if context is not None:
+            try:
+                from dockrion_events import set_current_context
+
+                set_current_context(context)
+            except ImportError:
+                pass  # Events package not installed
+
         # Step 3: Log invocation start
         logger.debug(
             "LangGraph agent invocation started",
@@ -452,13 +855,19 @@ class LangGraphAdapter:
             input_keys=list(payload.keys()) if isinstance(payload, dict) else "non-dict",
             has_config=config is not None,
             config_keys=list(config.keys()) if config else None,
+            has_context=context is not None,
         )
 
         # Step 4: Invoke agent
         try:
-            if config and self._supports_config:
+            # Add context to config if supported
+            invoke_config = config.copy() if config else {}
+            if context is not None and self._supports_config:
+                invoke_config["stream_context"] = context
+
+            if invoke_config and self._supports_config:
                 # Pass config to LangGraph for state management
-                result = self._runner.invoke(payload, config=config)
+                result = self._runner.invoke(payload, config=invoke_config)
             else:
                 # Simple invocation without config
                 result = self._runner.invoke(payload)
@@ -487,8 +896,17 @@ class LangGraphAdapter:
             raise AgentExecutionError(
                 f"LangGraph invocation failed: {type(e).__name__}: {e}"
             ) from e
+        finally:
+            # Step 5: Clear thread-local context (always, even on exception)
+            if context is not None:
+                try:
+                    from dockrion_events import set_current_context
 
-        # Step 5: Validate output is dict
+                    set_current_context(None)
+                except ImportError:
+                    pass
+
+        # Step 6: Validate output is dict
         if not isinstance(result, dict):
             actual_type = type(result).__name__
             logger.error(
@@ -502,18 +920,283 @@ class LangGraphAdapter:
                 actual_type=type(result),
             )
 
-        # Step 6: Deep serialize result to ensure JSON-serializable output
+        # Step 7: Deep serialize result to ensure JSON-serializable output
         result = serialize_for_json(result)
 
-        # Step 7: Log success
+        # Step 8: Log success
         logger.debug(
             "LangGraph agent invocation completed",
             entrypoint=self._entrypoint,
             output_keys=list(result.keys()),
         )
 
-        # Step 8: Return result
+        # Step 9: Return result
         return result
+
+    async def invoke_stream(
+        self,
+        payload: Dict[str, Any],
+        config: Optional[Dict[str, Any]] = None,
+        context: Optional[Any] = None,
+        events_filter: Optional[Any] = None,
+    ) -> AsyncIterator[Dict[str, Any]]:
+        """
+        Stream agent execution, yielding events as they occur.
+
+        Uses LangGraph's .stream() method if available to yield
+        intermediate results and step completions.
+
+        This is an async generator to be compatible with FastAPI's
+        async for iteration in streaming endpoints.
+
+        Pattern A Support:
+        - If events_filter is provided, stream modes are dynamically selected
+        - If context is not provided but events_filter is, a queue-mode context
+          is created automatically for capturing user-emitted events
+        - User events are drained and interleaved with framework events
+
+        Args:
+            payload: Input dictionary
+            config: Optional LangGraph configuration
+            context: Optional StreamContext for emitting events
+            events_filter: Optional EventsFilter to control which events are yielded
+
+        Yields:
+            Dictionaries containing step results and metadata in Dockrion format:
+            - {"type": "step", "node": "...", "output": {...}}
+            - {"type": "token", "content": "..."}
+            - {"type": "custom", "event_type": "...", ...}  # User-emitted events
+
+        Example:
+            >>> from dockrion_events import EventsFilter
+            >>> filter = EventsFilter(["token", "step"])
+            >>> async for event in adapter.invoke_stream(payload, events_filter=filter):
+            ...     print(f"Event: {event.get('type')}")
+        """
+        import asyncio
+        import queue as queue_module
+        import threading
+        import uuid as uuid_module
+
+        # Check adapter is loaded
+        if self._runner is None:
+            logger.error("invoke_stream called before load")
+            raise AdapterNotLoadedError()
+
+        # Check streaming support
+        if not self._supports_streaming:
+            logger.warning(
+                "Agent doesn't support streaming, falling back to invoke",
+                entrypoint=self._entrypoint,
+            )
+            result = self.invoke(payload, config=config, context=context)
+            yield {"type": "result", "data": result}
+            return
+
+        # Create queue-mode context if not provided but filter is available
+        # This enables user code to emit events even in Pattern A
+        stream_context = context
+        owns_context = False
+        if stream_context is None and events_filter is not None:
+            try:
+                from dockrion_events import LangGraphBackend, StreamContext
+
+                run_id = str(uuid_module.uuid4())
+
+                # Create native LangGraph backend for direct streaming
+                streaming_backend = LangGraphBackend()
+
+                stream_context = StreamContext(
+                    run_id=run_id,
+                    queue_mode=True,
+                    events_filter=events_filter,
+                    streaming_backend=streaming_backend,
+                )
+                owns_context = True
+                logger.debug(
+                    "Created queue-mode context for Pattern A with native backend",
+                    run_id=run_id,
+                    backend=streaming_backend.name,
+                )
+            except ImportError:
+                pass
+
+        # Set thread-local context if available
+        if stream_context is not None:
+            try:
+                from dockrion_events import set_current_context
+
+                set_current_context(stream_context)
+            except ImportError:
+                pass
+
+        # Determine which LangGraph stream modes to use based on filter
+        stream_modes = None
+        if events_filter is not None and hasattr(events_filter, "get_langgraph_stream_modes"):
+            stream_modes = events_filter.get_langgraph_stream_modes()
+            logger.debug(
+                "Using filtered stream modes",
+                modes=stream_modes,
+            )
+
+        logger.debug(
+            "LangGraph streaming started",
+            entrypoint=self._entrypoint,
+            input_keys=list(payload.keys()) if isinstance(payload, dict) else "non-dict",
+            has_filter=events_filter is not None,
+            stream_modes=stream_modes,
+        )
+
+        # Use a queue to bridge sync stream to async iteration
+        result_queue: queue_module.Queue[Dict[str, Any] | None | Exception] = queue_module.Queue()
+
+        def stream_worker() -> None:
+            """Worker thread that reads from sync stream and puts to queue."""
+            # IMPORTANT: Set thread-local context at the START of the worker thread
+            # Thread-local storage doesn't propagate from parent thread, so we must
+            # explicitly set it here for get_current_context() to work in graph nodes
+            if stream_context is not None:
+                try:
+                    from dockrion_events import set_current_context
+
+                    set_current_context(stream_context)
+                except ImportError:
+                    pass
+
+            try:
+                # Build config
+                stream_config = config.copy() if config else {}
+                if stream_context is not None:
+                    stream_config["stream_context"] = stream_context
+
+                # Determine if step events should be emitted
+                emit_steps = True
+                if events_filter is not None:
+                    emit_steps = events_filter.is_allowed("step")
+
+                # Build stream() kwargs - pass stream_mode if filter provided modes
+                stream_kwargs: Dict[str, Any] = {"config": stream_config}
+                if stream_modes is not None:
+                    # LangGraph accepts stream_mode as a list or single value
+                    stream_kwargs["stream_mode"] = stream_modes
+
+                # Determine if tokens should be emitted
+                emit_tokens = True
+                if events_filter is not None:
+                    emit_tokens = events_filter.is_allowed("token")
+
+                # Stream through the graph
+                for step_output in self._runner.stream(payload, **stream_kwargs):  # type: ignore[union-attr]
+                    # LangGraph returns different formats based on stream_mode:
+                    # - No stream_mode: {node_name: output_dict}
+                    # - With stream_mode: (mode, data) tuples
+
+                    if stream_modes is not None and isinstance(step_output, tuple) and len(step_output) == 2:
+                        # Multi-mode streaming: (mode, data) tuples
+                        mode, data = step_output
+                        _process_langgraph_stream_tuple(
+                            mode=mode,
+                            data=data,
+                            result_queue=result_queue,
+                            stream_context=stream_context,
+                            emit_steps=emit_steps,
+                            emit_tokens=emit_tokens,
+                            logger=logger,
+                            events_filter=events_filter,
+                        )
+                    elif isinstance(step_output, dict):
+                        # Default streaming (no stream_mode): {node_name: output_dict}
+                        _process_langgraph_default_stream(
+                            step_output=step_output,
+                            result_queue=result_queue,
+                            stream_context=stream_context,
+                            emit_steps=emit_steps,
+                            logger=logger,
+                        )
+                    else:
+                        # Unknown format - log and skip
+                        logger.debug(
+                            "Unknown stream output format",
+                            output_type=type(step_output).__name__,
+                        )
+
+                    # Drain any user-emitted events from context queue after each step
+                    _drain_user_events(stream_context, result_queue, logger)
+
+                # Signal completion
+                result_queue.put(None)
+
+            except Exception as e:
+                result_queue.put(e)
+            finally:
+                # Clear thread-local context in worker thread
+                if stream_context is not None:
+                    try:
+                        from dockrion_events import set_current_context
+
+                        set_current_context(None)
+                    except ImportError:
+                        pass
+
+        # Start worker thread
+        worker = threading.Thread(target=stream_worker, daemon=True)
+        worker.start()
+
+        try:
+            # Async iteration over queue results
+            while True:
+                # Non-blocking check with async sleep to yield control
+                while result_queue.empty():
+                    await asyncio.sleep(0.01)  # 10ms poll interval
+
+                item = result_queue.get_nowait()
+
+                if item is None:
+                    # Drain any remaining user events before completing
+                    if stream_context is not None and hasattr(stream_context, "drain_queued_events"):
+                        try:
+                            remaining_events = stream_context.drain_queued_events()
+                            for event in remaining_events:
+                                yield {
+                                    "type": "custom",
+                                    "event_type": getattr(event, "type", "custom"),
+                                    "data": event.model_dump() if hasattr(event, "model_dump") else {},
+                                }
+                        except Exception as e:
+                            logger.debug(f"Failed to drain final user events: {e}")
+
+                    # Stream completed
+                    logger.debug(
+                        "LangGraph streaming completed",
+                        entrypoint=self._entrypoint,
+                    )
+                    break
+                elif isinstance(item, Exception):
+                    # Stream errored
+                    logger.error(
+                        "LangGraph streaming failed",
+                        error=str(item),
+                        error_type=type(item).__name__,
+                        entrypoint=self._entrypoint,
+                    )
+                    raise AgentExecutionError(
+                        f"LangGraph streaming failed: {type(item).__name__}: {item}"
+                    ) from item
+                else:
+                    yield item
+
+        finally:
+            # Wait for worker to finish
+            worker.join(timeout=1.0)
+
+            # Clear context in main thread as well
+            if stream_context is not None:
+                try:
+                    from dockrion_events import set_current_context
+
+                    set_current_context(None)
+                except ImportError:
+                    pass
 
     def get_metadata(self) -> Dict[str, Any]:
         """

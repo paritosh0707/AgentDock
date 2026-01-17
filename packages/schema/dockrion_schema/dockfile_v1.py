@@ -19,7 +19,7 @@ Usage:
 """
 
 import re
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 # Import validation utilities and constants from common package
 from dockrion_common import (
@@ -861,6 +861,338 @@ class Metadata(BaseModel):
 
 
 # =============================================================================
+# STREAMING CONFIGURATION
+# =============================================================================
+
+
+class StreamingEventsConfig(BaseModel):
+    """
+    Configuration for event emission using allow-list approach.
+
+    Controls which events are emitted by the runtime. Uses an allow-list model
+    where you specify which events you want enabled.
+
+    Configuration options for `allowed`:
+    - `null` / omitted: All events enabled (default)
+    - Preset string: `"chat"`, `"debug"`, `"minimal"`, `"all"`
+    - Explicit list: `["token", "step", "custom:fraud_check"]`
+
+    Presets:
+    - `"minimal"`: Only mandatory lifecycle events (started, complete, error, cancelled)
+    - `"chat"`: token, step, heartbeat (optimized for chat UIs)
+    - `"debug"`: All events including custom (for development)
+    - `"all"`: Same as debug, all events enabled
+
+    Mandatory events (always emitted regardless of config):
+    - started, complete, error, cancelled
+
+    Configurable events:
+    - token: LLM token streaming
+    - step: Node/step completion events
+    - progress: Progress percentage updates
+    - checkpoint: Intermediate state snapshots
+    - heartbeat: Keep-alive events
+
+    Custom events:
+    - `"custom"`: Allow all custom events
+    - `"custom:name"`: Allow specific custom event
+
+    Example:
+        ```yaml
+        streaming:
+          events:
+            allowed: chat  # Use preset
+            heartbeat_interval: 15
+            max_run_duration: 3600
+        ```
+
+        ```yaml
+        streaming:
+          events:
+            allowed:  # Explicit list
+              - token
+              - step
+              - custom:fraud_check
+        ```
+    """
+
+    allowed: Optional[Union[List[str], str]] = None
+    """
+    Which events to allow. Can be:
+    - null: All events allowed (default)
+    - Preset string: "chat", "debug", "minimal", "all"
+    - List of event types: ["token", "step", "custom:fraud_check"]
+    """
+
+    heartbeat_interval: int = 15
+    """Heartbeat interval in seconds."""
+
+    max_run_duration: int = 3600
+    """Maximum run duration in seconds before timeout."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("allowed")
+    @classmethod
+    def validate_allowed(cls, v: Optional[Union[List[str], str]]) -> Optional[Union[List[str], str]]:
+        """Validate allowed events configuration."""
+        # Constants defined inline to avoid Pydantic private attribute issues
+        valid_presets = {"minimal", "chat", "debug", "all"}
+        valid_event_types = {"token", "step", "progress", "checkpoint", "heartbeat"}
+        mandatory_events = {"started", "complete", "error", "cancelled"}
+
+        if v is None:
+            return v
+
+        if isinstance(v, str):
+            # Validate preset name
+            if v not in valid_presets:
+                presets_str = ", ".join(sorted(valid_presets))
+                raise ValidationError(
+                    f"Unknown events preset: '{v}'. Valid presets: {presets_str}"
+                )
+            return v
+
+        if isinstance(v, list):
+            for item in v:
+                if not isinstance(item, str):
+                    raise ValidationError(f"Event type must be a string, got {type(item).__name__}")
+
+                # Check for custom event pattern
+                if item.startswith("custom:"):
+                    custom_name = item[7:]
+                    if not custom_name:
+                        raise ValidationError("Custom event name cannot be empty in 'custom:'")
+                    # Custom event names should be valid identifiers
+                    if not re.match(r"^[a-zA-Z_][a-zA-Z0-9_]*$", custom_name):
+                        raise ValidationError(
+                            f"Invalid custom event name: '{custom_name}'. "
+                            "Must be a valid identifier (letters, digits, underscores)."
+                        )
+                    continue
+
+                # "custom" wildcard is valid
+                if item == "custom":
+                    continue
+
+                # Check if it's a valid built-in event type
+                if item not in valid_event_types:
+                    # Also allow mandatory events in list (they're just ignored)
+                    if item not in mandatory_events:
+                        valid_types_str = ", ".join(sorted(valid_event_types | {"custom", "custom:<name>"}))
+                        raise ValidationError(
+                            f"Unknown event type: '{item}'. Valid types: {valid_types_str}"
+                        )
+
+            return v
+
+        raise ValidationError("allowed must be null, a preset string, or a list of event types")
+
+    @field_validator("heartbeat_interval")
+    @classmethod
+    def validate_heartbeat_interval(cls, v: int) -> int:
+        """Validate heartbeat interval is reasonable."""
+        if v < 1 or v > 300:
+            raise ValidationError("heartbeat_interval must be between 1 and 300 seconds")
+        return v
+
+    @field_validator("max_run_duration")
+    @classmethod
+    def validate_max_run_duration(cls, v: int) -> int:
+        """Validate max run duration is reasonable."""
+        if v < 1 or v > 86400:  # Max 24 hours
+            raise ValidationError("max_run_duration must be between 1 and 86400 seconds")
+        return v
+
+
+class StreamingConnectionConfig(BaseModel):
+    """
+    SSE connection settings.
+
+    Example:
+        ```yaml
+        streaming:
+          connection:
+            default_timeout: 300
+            max_subscribers_per_run: 100
+        ```
+    """
+
+    default_timeout: int = 300
+    """Default SSE connection timeout in seconds."""
+
+    max_subscribers_per_run: int = 100
+    """Maximum concurrent subscribers per run."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("default_timeout")
+    @classmethod
+    def validate_default_timeout(cls, v: int) -> int:
+        """Validate timeout is reasonable."""
+        if v < 1 or v > 3600:
+            raise ValidationError("default_timeout must be between 1 and 3600 seconds")
+        return v
+
+    @field_validator("max_subscribers_per_run")
+    @classmethod
+    def validate_max_subscribers(cls, v: int) -> int:
+        """Validate max subscribers is reasonable."""
+        if v < 1 or v > 1000:
+            raise ValidationError("max_subscribers_per_run must be between 1 and 1000")
+        return v
+
+
+class StreamingIdGenerator(BaseModel):
+    """
+    Run ID generator configuration.
+
+    Supports UUID (default) or custom generator function.
+
+    Example:
+        ```yaml
+        streaming:
+          id_generator:
+            type: custom
+            handler: myapp.ids:generate_run_id
+        ```
+    """
+
+    type: str = "uuid"
+    """Generator type: 'uuid' or 'custom'."""
+
+    handler: Optional[str] = None
+    """Custom generator function path (for type='custom')."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("type")
+    @classmethod
+    def validate_generator_type(cls, v: str) -> str:
+        """Validate generator type."""
+        valid_types = ["uuid", "custom"]
+        if v not in valid_types:
+            raise ValidationError(f"id_generator type must be one of: {', '.join(valid_types)}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_custom_handler(self) -> Self:
+        """Ensure custom type has handler."""
+        if self.type == "custom" and not self.handler:
+            raise ValidationError("Custom id_generator requires 'handler' field")
+        return self
+
+
+class RedisStreamingConfig(BaseModel):
+    """
+    Redis backend configuration for streaming.
+
+    Example:
+        ```yaml
+        streaming:
+          backend: redis
+          redis:
+            url: ${REDIS_URL}
+            stream_ttl_seconds: 3600
+            max_events_per_run: 1000
+            connection_pool_size: 10
+        ```
+    """
+
+    url: str = "${REDIS_URL}"
+    """Redis connection URL (supports env var substitution)."""
+
+    stream_ttl_seconds: int = 3600
+    """Event retention time in seconds."""
+
+    max_events_per_run: int = 1000
+    """Maximum events to retain per run."""
+
+    connection_pool_size: int = 10
+    """Redis connection pool size."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("stream_ttl_seconds")
+    @classmethod
+    def validate_stream_ttl(cls, v: int) -> int:
+        """Validate TTL is reasonable."""
+        if v < 60 or v > 604800:  # 1 minute to 1 week
+            raise ValidationError("stream_ttl_seconds must be between 60 and 604800")
+        return v
+
+    @field_validator("max_events_per_run")
+    @classmethod
+    def validate_max_events(cls, v: int) -> int:
+        """Validate max events is reasonable."""
+        if v < 10 or v > 100000:
+            raise ValidationError("max_events_per_run must be between 10 and 100000")
+        return v
+
+
+class StreamingConfig(BaseModel):
+    """
+    Complete streaming configuration.
+
+    Controls async runs, backend selection, and event settings.
+
+    Example:
+        ```yaml
+        streaming:
+          async_runs: true
+          backend: redis
+          redis:
+            url: ${REDIS_URL}
+          allow_client_ids: true
+          events:
+            heartbeat_interval: 15
+          connection:
+            default_timeout: 300
+        ```
+    """
+
+    async_runs: bool = True
+    """Enable async runs (Pattern B: POST /runs + GET /runs/{id}/events)."""
+
+    backend: str = "memory"
+    """Backend type: 'memory' or 'redis'."""
+
+    redis: Optional[RedisStreamingConfig] = None
+    """Redis-specific configuration (required if backend='redis')."""
+
+    id_generator: Optional[StreamingIdGenerator] = None
+    """Run ID generator configuration."""
+
+    allow_client_ids: bool = True
+    """Allow client-provided run IDs."""
+
+    events: Optional[StreamingEventsConfig] = None
+    """Event emission configuration."""
+
+    connection: Optional[StreamingConnectionConfig] = None
+    """Connection settings."""
+
+    model_config = ConfigDict(extra="allow")
+
+    @field_validator("backend")
+    @classmethod
+    def validate_backend(cls, v: str) -> str:
+        """Validate backend type."""
+        valid_backends = ["memory", "redis"]
+        if v not in valid_backends:
+            raise ValidationError(f"backend must be one of: {', '.join(valid_backends)}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_redis_config(self) -> Self:
+        """Ensure redis config is provided when backend is redis."""
+        if self.backend == "redis" and not self.redis:
+            # Create default redis config if not provided
+            object.__setattr__(self, "redis", RedisStreamingConfig())
+        return self
+
+
+# =============================================================================
 # BUILD CONFIGURATION
 # =============================================================================
 
@@ -995,6 +1327,7 @@ class DockSpec(BaseModel):
     metadata: Optional[Metadata] = None
     secrets: Optional[SecretsConfig] = None
     build: Optional[BuildConfig] = None
+    streaming: Optional[StreamingConfig] = None
 
     # Allow unknown fields for future expansion (Phase 2+)
     # When new services are built, add their models above and make them optional

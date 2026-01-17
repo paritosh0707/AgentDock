@@ -9,6 +9,9 @@ from pathlib import Path
 
 import pytest
 
+# Enable pytest-asyncio
+pytest_plugins = ("pytest_asyncio",)
+
 
 def pytest_configure(config):
     """Configure pytest with custom markers and path setup."""
@@ -16,6 +19,7 @@ def pytest_configure(config):
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
     config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "requires_events: marks tests that require events package")
 
 
 @pytest.fixture(scope="session", autouse=True)

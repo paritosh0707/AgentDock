@@ -366,4 +366,3 @@ class TestBuildResolverWarnings:
         assert any("both include and exclude" in w for w in resolution.warnings)
         # Exclude should win
         assert "utils" not in resolution.directories
-

@@ -183,4 +183,3 @@ class TestResolveEntrypointModules:
         assert len(files) == 0
         # Should have warning about ambiguity
         assert any("Both" in w for w in warnings)
-

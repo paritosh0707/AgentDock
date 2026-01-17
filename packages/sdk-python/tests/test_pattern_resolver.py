@@ -170,4 +170,3 @@ class TestFilterByExcludes:
         assert "module.py" in result
         assert "module.pyc" not in result
         assert "test.pyc" not in result
-

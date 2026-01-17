@@ -2,7 +2,17 @@
 
 import typer
 
-from . import build_cmd, info_cmd, init_cmd, inspect_cmd, logs_cmd, run_cmd, test_cmd, validate_cmd
+from . import (
+    add_cmd,
+    build_cmd,
+    info_cmd,
+    init_cmd,
+    inspect_cmd,
+    logs_cmd,
+    run_cmd,
+    test_cmd,
+    validate_cmd,
+)
 
 app = typer.Typer(
     name="dockrion",
@@ -21,6 +31,9 @@ app.command()(init_cmd.init)
 app.command()(info_cmd.version)
 app.command()(info_cmd.doctor)
 app.command()(inspect_cmd.inspect)
+
+# Register command groups
+app.add_typer(add_cmd.app, name="add", help="Add or update sections in Dockfile")
 
 
 def main():

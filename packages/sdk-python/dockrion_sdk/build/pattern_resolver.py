@@ -168,4 +168,3 @@ def filter_by_excludes(
         ['app', 'utils']
     """
     return sorted(item for item in items if not matches_pattern(item, exclude_patterns))
-

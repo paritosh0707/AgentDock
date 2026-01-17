@@ -26,6 +26,7 @@ SUB_PACKAGES = [
     ("common-py", "dockrion_common"),
     ("schema", "dockrion_schema"),
     ("adapters", "dockrion_adapters"),
+    ("events", "dockrion_events"),
     ("policy-engine", "dockrion_policy"),
     ("telemetry", "dockrion_telemetry"),
     ("runtime", "dockrion_runtime"),

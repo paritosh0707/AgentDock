@@ -1,7 +1,7 @@
 """Init command - Create new Dockfile template."""
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import typer
 from dockrion_schema import (
@@ -16,6 +16,8 @@ from dockrion_schema import (
     Observability,
     SecretDefinition,
     SecretsConfig,
+    StreamingConfig,
+    StreamingEventsConfig,
     to_yaml_string,
 )
 
@@ -26,11 +28,17 @@ app = typer.Typer()
 # Available auth modes
 AUTH_MODES = ["none", "api_key", "jwt"]
 
-# Available streaming modes
+# Available streaming modes (expose.streaming)
 STREAMING_MODES = ["none", "sse", "websocket"]
 
 # Available frameworks (must match SUPPORTED_FRAMEWORKS from dockrion_common)
 FRAMEWORKS = ["langgraph", "langchain", "custom"]
+
+# Available streaming events presets
+STREAMING_EVENTS_PRESETS = ["all", "chat", "debug", "minimal"]
+
+# Available streaming backends
+STREAMING_BACKENDS = ["memory", "redis"]
 
 
 def generate_dockfile_template(
@@ -44,6 +52,9 @@ def generate_dockfile_template(
     include_observability: bool = False,
     include_metadata: bool = False,
     secret_names: Optional[List[str]] = None,
+    streaming_events: Optional[Union[str, List[str]]] = None,
+    async_runs: bool = False,
+    streaming_backend: str = "memory",
 ) -> str:
     """Generate a Dockfile template using schema models.
 
@@ -55,12 +66,15 @@ def generate_dockfile_template(
         framework: Agent framework (langgraph, langchain, crewai, etc.)
         handler_mode: If True, use handler mode instead of entrypoint mode
         auth_mode: Authentication mode (none, api_key, jwt)
-        streaming: Streaming mode (none, sse, websocket)
+        streaming: Streaming mode (none, sse, websocket) for expose.streaming
         include_secrets: Whether to include secrets section
         include_cors: Whether to include CORS configuration
         include_observability: Whether to include observability section
         include_metadata: Whether to include metadata section
         secret_names: List of secret names to include
+        streaming_events: Events preset or list ("chat", "debug", or ["token", "step"])
+        async_runs: Whether to enable async /runs endpoint (Pattern B)
+        streaming_backend: Backend type ("memory" or "redis")
 
     Returns:
         YAML string representation of the Dockfile template
@@ -175,6 +189,22 @@ def generate_dockfile_template(
             tags=[name, framework],
         )
 
+    # Build streaming config (Pattern A/B configuration)
+    streaming_config = None
+    if async_runs or streaming_events or streaming_backend != "memory":
+        events_config = None
+        if streaming_events:
+            events_config = StreamingEventsConfig(
+                allowed=streaming_events,
+                heartbeat_interval=15,
+                max_run_duration=3600,
+            )
+        streaming_config = StreamingConfig(
+            async_runs=async_runs,
+            backend=streaming_backend,
+            events=events_config,
+        )
+
     spec = DockSpec(
         version="1.0",
         agent=agent,
@@ -193,6 +223,7 @@ def generate_dockfile_template(
         secrets=secrets,
         observability=observability,
         metadata=metadata,
+        streaming=streaming_config,
     )
     return to_yaml_string(spec)
 
@@ -251,6 +282,23 @@ def init(
         "--streaming",
         "-s",
         help="[API] Streaming: sse (default, real-time), websocket, or none",
+    ),
+    streaming_events: Optional[str] = typer.Option(
+        None,
+        "--streaming-events",
+        "-E",
+        help="[API] Events config: preset (all, chat, debug, minimal) or comma-separated (token,step,custom:myevent)",
+    ),
+    async_runs: bool = typer.Option(
+        False,
+        "--async-runs",
+        "-A",
+        help="[API] Enable async /runs endpoint (Pattern B) for background execution",
+    ),
+    streaming_backend: str = typer.Option(
+        "memory",
+        "--streaming-backend",
+        help="[API] Event backend: memory (default) or redis (production)",
     ),
     # ═══════════════════════════════════════════════════════════════════════════
     # EXTRAS - Additional configuration sections
@@ -358,6 +406,25 @@ def init(
             )
             raise typer.Exit(1)
 
+        # Validate streaming backend
+        if streaming_backend not in STREAMING_BACKENDS:
+            error(
+                f"Invalid streaming backend: '{streaming_backend}'. Valid options: {', '.join(STREAMING_BACKENDS)}"
+            )
+            raise typer.Exit(1)
+
+        # Parse and validate streaming events
+        parsed_streaming_events: Optional[Union[str, List[str]]] = None
+        if streaming_events:
+            # Check if it's a preset
+            if streaming_events in STREAMING_EVENTS_PRESETS:
+                parsed_streaming_events = streaming_events
+            else:
+                # Parse as comma-separated list
+                events_list = [e.strip() for e in streaming_events.split(",") if e.strip()]
+                if events_list:
+                    parsed_streaming_events = events_list
+
         output_path = Path(output)
 
         # Check if file exists
@@ -377,6 +444,8 @@ def init(
             cors = True
             observability = True
             metadata = True
+            # Enable async runs with full flag
+            async_runs = True
 
         # Parse secret names if provided
         parsed_secret_names = None
@@ -395,6 +464,9 @@ def init(
             include_observability=observability,
             include_metadata=metadata,
             secret_names=parsed_secret_names,
+            streaming_events=parsed_streaming_events,
+            async_runs=async_runs,
+            streaming_backend=streaming_backend,
         )
 
         # Write file
@@ -407,6 +479,15 @@ def init(
         console.print(f"  • Mode: [green]{'handler' if handler else 'entrypoint'}[/green]")
         console.print(f"  • Framework: [green]{framework if not handler else 'custom'}[/green]")
         console.print(f"  • Streaming: [green]{streaming}[/green]")
+        if parsed_streaming_events:
+            if isinstance(parsed_streaming_events, str):
+                console.print(f"  • Events preset: [green]{parsed_streaming_events}[/green]")
+            else:
+                console.print(f"  • Events filter: [green]{', '.join(parsed_streaming_events)}[/green]")
+        if async_runs:
+            console.print("  • Async runs (/runs): [green]enabled[/green]")
+        if streaming_backend != "memory":
+            console.print(f"  • Backend: [green]{streaming_backend}[/green]")
         if auth:
             console.print(f"  • Auth: [green]{auth}[/green]")
         if secrets or parsed_secret_names:

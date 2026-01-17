@@ -6,16 +6,70 @@ and RuntimeState for managing runtime state between lifespan and endpoints.
 """
 
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from dockrion_adapters.base import AgentAdapter
 from dockrion_adapters.handler_adapter import HandlerAdapter
-from dockrion_common.constants import RuntimeDefaults, Timeouts
+from dockrion_common.constants import RuntimeDefaults, StreamingDefaults, Timeouts
 from dockrion_schema import DockSpec
 
 from .auth import BaseAuthHandler
 from .metrics import RuntimeMetrics
 from .policies import RuntimePolicyEngine
+
+
+@dataclass
+class StreamingRuntimeConfig:
+    """
+    Streaming-specific runtime configuration.
+
+    Extracted from DockSpec.streaming for easy access.
+    """
+
+    enabled: bool = False
+    async_runs: bool = True
+    backend: str = StreamingDefaults.BACKEND_MEMORY
+    heartbeat_interval: int = StreamingDefaults.HEARTBEAT_INTERVAL
+    max_run_duration: int = StreamingDefaults.MAX_RUN_DURATION
+    default_timeout: int = StreamingDefaults.DEFAULT_TIMEOUT
+    max_subscribers: int = StreamingDefaults.MAX_SUBSCRIBERS
+    allow_client_ids: bool = True
+
+    # Events filter configuration (allow-list or preset)
+    events_allowed: Optional[Union[List[str], str]] = None
+
+    # Redis settings (only used if backend == "redis")
+    redis_url: Optional[str] = None
+    redis_ttl: int = StreamingDefaults.STREAM_TTL
+    redis_max_events: int = StreamingDefaults.MAX_EVENTS_PER_RUN
+    redis_pool_size: int = StreamingDefaults.CONNECTION_POOL_SIZE
+
+    # Cached EventsFilter instance
+    _events_filter: Optional[Any] = field(default=None, repr=False)
+
+    def get_events_filter(self) -> Optional[Any]:
+        """
+        Get or create the EventsFilter instance.
+
+        Returns:
+            EventsFilter instance if dockrion_events is available, None otherwise
+
+        Raises:
+            ValueError: If events_allowed config is invalid
+        """
+        if self._events_filter is not None:
+            return self._events_filter
+
+        try:
+            from dockrion_events import EventsFilter
+
+            self._events_filter = EventsFilter(self.events_allowed)
+            return self._events_filter
+        except ImportError:
+            return None
+        except ValueError:
+            # Re-raise validation errors
+            raise
 
 
 @dataclass
@@ -47,7 +101,11 @@ class RuntimeConfig:
 
     # Features
     enable_streaming: bool = False
+    enable_async_runs: bool = False
     timeout_sec: int = Timeouts.REQUEST
+
+    # Streaming configuration
+    streaming: StreamingRuntimeConfig = field(default_factory=StreamingRuntimeConfig)
 
     # Auth (defaults from RuntimeDefaults)
     auth_enabled: bool = False
@@ -115,6 +173,40 @@ class RuntimeConfig:
             cors_origins = list(RuntimeDefaults.CORS_ORIGINS)
             cors_methods = list(RuntimeDefaults.CORS_METHODS)
 
+        # Extract streaming configuration
+        streaming_config = StreamingRuntimeConfig()
+        enable_streaming = bool(expose and expose.streaming and expose.streaming != "none")
+        enable_async_runs = False
+
+        if spec.streaming:
+            streaming = spec.streaming
+            streaming_config = StreamingRuntimeConfig(
+                enabled=True,
+                async_runs=streaming.async_runs,
+                backend=streaming.backend,
+                allow_client_ids=streaming.allow_client_ids,
+            )
+            enable_async_runs = streaming.async_runs
+
+            # Events config
+            if streaming.events:
+                streaming_config.heartbeat_interval = streaming.events.heartbeat_interval
+                streaming_config.max_run_duration = streaming.events.max_run_duration
+                # Extract allow-list configuration for events filter
+                streaming_config.events_allowed = streaming.events.allowed
+
+            # Connection config
+            if streaming.connection:
+                streaming_config.default_timeout = streaming.connection.default_timeout
+                streaming_config.max_subscribers = streaming.connection.max_subscribers_per_run
+
+            # Redis config
+            if streaming.backend == "redis" and streaming.redis:
+                streaming_config.redis_url = streaming.redis.url
+                streaming_config.redis_ttl = streaming.redis.stream_ttl_seconds
+                streaming_config.redis_max_events = streaming.redis.max_events_per_run
+                streaming_config.redis_pool_size = streaming.redis.connection_pool_size
+
         return cls(
             agent_name=agent.name,
             agent_framework=agent.framework or RuntimeDefaults.DEFAULT_FRAMEWORK,
@@ -124,7 +216,9 @@ class RuntimeConfig:
             use_handler_mode=use_handler_mode,
             host=expose.host if expose else RuntimeDefaults.HOST,
             port=expose.port if expose else RuntimeDefaults.PORT,
-            enable_streaming=bool(expose and expose.streaming and expose.streaming != "none"),
+            enable_streaming=enable_streaming,
+            enable_async_runs=enable_async_runs,
+            streaming=streaming_config,
             timeout_sec=timeout_sec,
             auth_enabled=bool(auth and auth.mode != "none"),
             auth_mode=auth.mode if auth else RuntimeDefaults.AUTH_MODE,
@@ -151,3 +245,7 @@ class RuntimeState:
         self.auth_handler: Optional[BaseAuthHandler] = None
         self.policy_engine: Optional[RuntimePolicyEngine] = None
         self.ready: bool = False
+
+        # Streaming components (initialized if streaming enabled)
+        self.event_bus: Optional[Any] = None  # EventBus
+        self.run_manager: Optional[Any] = None  # RunManager

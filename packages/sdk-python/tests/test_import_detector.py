@@ -217,4 +217,3 @@ from models import User
         assert "utils" in dirs
         assert "models" in dirs
         assert "helpers.py" in files
-

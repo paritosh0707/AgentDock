@@ -194,4 +194,3 @@ def _check_and_add_module(
         directories.add(module_name)
     elif info.type == ModuleType.FILE:
         files.add(f"{module_name}.py")
-

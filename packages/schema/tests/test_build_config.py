@@ -146,9 +146,7 @@ class TestBuildConfig:
 
     def test_extra_fields_allowed(self):
         """Test that extra fields are allowed for extensibility."""
-        config = BuildConfig.model_validate(
-            {"exclude": ["tests/"], "future_option": True}
-        )
+        config = BuildConfig.model_validate({"exclude": ["tests/"], "future_option": True})
 
         assert config.exclude == ["tests/"]
         assert config.model_extra == {"future_option": True}
@@ -159,45 +157,49 @@ class TestDockSpecWithBuild:
 
     def test_dockspec_without_build(self):
         """Test DockSpec without build config."""
-        spec = DockSpec.model_validate({
-            "version": "1.0",
-            "agent": {
-                "name": "test-agent",
-                "entrypoint": "app:handler",
-                "framework": "langgraph",
-            },
-            "io_schema": {
-                "input": {"type": "object"},
-                "output": {"type": "object"},
-            },
-            "expose": {"port": 8080},
-        })
+        spec = DockSpec.model_validate(
+            {
+                "version": "1.0",
+                "agent": {
+                    "name": "test-agent",
+                    "entrypoint": "app:handler",
+                    "framework": "langgraph",
+                },
+                "io_schema": {
+                    "input": {"type": "object"},
+                    "output": {"type": "object"},
+                },
+                "expose": {"port": 8080},
+            }
+        )
 
         assert spec.build is None
 
     def test_dockspec_with_build(self):
         """Test DockSpec with build config."""
-        spec = DockSpec.model_validate({
-            "version": "1.0",
-            "agent": {
-                "name": "test-agent",
-                "entrypoint": "app:handler",
-                "framework": "langgraph",
-            },
-            "io_schema": {
-                "input": {"type": "object"},
-                "output": {"type": "object"},
-            },
-            "expose": {"port": 8080},
-            "build": {
-                "include": {
-                    "directories": ["utils", "models"],
-                    "files": ["config.yaml"],
+        spec = DockSpec.model_validate(
+            {
+                "version": "1.0",
+                "agent": {
+                    "name": "test-agent",
+                    "entrypoint": "app:handler",
+                    "framework": "langgraph",
                 },
-                "exclude": ["tests/", "**/__pycache__"],
-                "auto_detect_imports": False,
-            },
-        })
+                "io_schema": {
+                    "input": {"type": "object"},
+                    "output": {"type": "object"},
+                },
+                "expose": {"port": 8080},
+                "build": {
+                    "include": {
+                        "directories": ["utils", "models"],
+                        "files": ["config.yaml"],
+                    },
+                    "exclude": ["tests/", "**/__pycache__"],
+                    "auto_detect_imports": False,
+                },
+            }
+        )
 
         assert spec.build is not None
         assert spec.build.include is not None
@@ -208,22 +210,24 @@ class TestDockSpecWithBuild:
 
     def test_dockspec_with_minimal_build(self):
         """Test DockSpec with minimal build config."""
-        spec = DockSpec.model_validate({
-            "version": "1.0",
-            "agent": {
-                "name": "test-agent",
-                "entrypoint": "app:handler",
-                "framework": "langgraph",
-            },
-            "io_schema": {
-                "input": {"type": "object"},
-                "output": {"type": "object"},
-            },
-            "expose": {"port": 8080},
-            "build": {
-                "auto_detect_imports": True,
-            },
-        })
+        spec = DockSpec.model_validate(
+            {
+                "version": "1.0",
+                "agent": {
+                    "name": "test-agent",
+                    "entrypoint": "app:handler",
+                    "framework": "langgraph",
+                },
+                "io_schema": {
+                    "input": {"type": "object"},
+                    "output": {"type": "object"},
+                },
+                "expose": {"port": 8080},
+                "build": {
+                    "auto_detect_imports": True,
+                },
+            }
+        )
 
         assert spec.build is not None
         assert spec.build.include is None
@@ -232,22 +236,24 @@ class TestDockSpecWithBuild:
 
     def test_dockspec_with_only_exclude(self):
         """Test DockSpec with only exclude patterns."""
-        spec = DockSpec.model_validate({
-            "version": "1.0",
-            "agent": {
-                "name": "test-agent",
-                "entrypoint": "app:handler",
-                "framework": "langgraph",
-            },
-            "io_schema": {
-                "input": {"type": "object"},
-                "output": {"type": "object"},
-            },
-            "expose": {"port": 8080},
-            "build": {
-                "exclude": ["tests/", "docs/"],
-            },
-        })
+        spec = DockSpec.model_validate(
+            {
+                "version": "1.0",
+                "agent": {
+                    "name": "test-agent",
+                    "entrypoint": "app:handler",
+                    "framework": "langgraph",
+                },
+                "io_schema": {
+                    "input": {"type": "object"},
+                    "output": {"type": "object"},
+                },
+                "expose": {"port": 8080},
+                "build": {
+                    "exclude": ["tests/", "docs/"],
+                },
+            }
+        )
 
         assert spec.build is not None
         assert spec.build.include is None
@@ -256,26 +262,28 @@ class TestDockSpecWithBuild:
 
     def test_dockspec_serialization(self):
         """Test that build config serializes correctly."""
-        spec = DockSpec.model_validate({
-            "version": "1.0",
-            "agent": {
-                "name": "test-agent",
-                "entrypoint": "app:handler",
-                "framework": "langgraph",
-            },
-            "io_schema": {
-                "input": {"type": "object"},
-                "output": {"type": "object"},
-            },
-            "expose": {"port": 8080},
-            "build": {
-                "include": {
-                    "directories": ["utils"],
+        spec = DockSpec.model_validate(
+            {
+                "version": "1.0",
+                "agent": {
+                    "name": "test-agent",
+                    "entrypoint": "app:handler",
+                    "framework": "langgraph",
                 },
-                "exclude": ["tests/"],
-                "auto_detect_imports": True,
-            },
-        })
+                "io_schema": {
+                    "input": {"type": "object"},
+                    "output": {"type": "object"},
+                },
+                "expose": {"port": 8080},
+                "build": {
+                    "include": {
+                        "directories": ["utils"],
+                    },
+                    "exclude": ["tests/"],
+                    "auto_detect_imports": True,
+                },
+            }
+        )
 
         # Serialize and deserialize
         data = spec.model_dump()
@@ -286,4 +294,3 @@ class TestDockSpecWithBuild:
         assert restored.build.include.directories == ["utils"]
         assert restored.build.exclude == ["tests/"]
         assert restored.build.auto_detect_imports is True
-

@@ -24,6 +24,7 @@ from .endpoints import (
     create_health_router,
     create_info_router,
     create_invoke_router,
+    create_runs_router,
     create_welcome_router,
 )
 from .metrics import RuntimeMetrics
@@ -32,6 +33,15 @@ from .policies import create_policy_engine
 from .schema_utils import create_pydantic_model_from_schema
 
 logger = get_logger(__name__)
+
+# Check if dockrion_events package is available at import time
+_EVENTS_PACKAGE_AVAILABLE = False
+try:
+    import dockrion_events  # noqa: F401
+
+    _EVENTS_PACKAGE_AVAILABLE = True
+except ImportError:
+    pass
 
 
 def create_app(
@@ -113,6 +123,49 @@ def create_app(
                 adapter.load(config.agent_entrypoint or "")
                 logger.info(f"✅ Agent loaded from {config.agent_entrypoint}")
 
+            # Initialize streaming components if enabled
+            if config.enable_async_runs or config.streaming.enabled:
+                try:
+                    from dockrion_events import EventBus, InMemoryBackend, RunManager
+
+                    # Create backend based on configuration
+                    if config.streaming.backend == "redis" and config.streaming.redis_url:
+                        try:
+                            from dockrion_events import RedisBackend
+
+                            backend = RedisBackend(
+                                url=config.streaming.redis_url,
+                                stream_ttl_seconds=config.streaming.redis_ttl,
+                                max_events_per_run=config.streaming.redis_max_events,
+                                connection_pool_size=config.streaming.redis_pool_size,
+                            )
+                            logger.info("✅ Redis backend initialized")
+                        except ImportError:
+                            logger.warning(
+                                "Redis backend requested but redis not installed. "
+                                "Falling back to in-memory backend."
+                            )
+                            backend = InMemoryBackend()
+                    else:
+                        backend = InMemoryBackend()
+                        logger.info("✅ In-memory backend initialized")
+
+                    # Create EventBus and RunManager
+                    state.event_bus = EventBus(backend)
+                    state.run_manager = RunManager(
+                        event_bus=state.event_bus,
+                        allow_client_ids=config.streaming.allow_client_ids,
+                        agent_name=config.agent_name,
+                        framework=config.agent_framework,
+                    )
+                    logger.info("✅ Streaming components initialized")
+
+                except ImportError as e:
+                    logger.warning(
+                        f"Streaming components not available: {e}. "
+                        "Install dockrion-events for streaming support."
+                    )
+
             state.ready = True
             logger.info(f"🎯 Agent {config.agent_name} ready on {config.host}:{config.port}")
 
@@ -121,6 +174,14 @@ def create_app(
             raise
 
         yield
+
+        # Cleanup streaming components
+        if state.event_bus is not None:
+            try:
+                await state.event_bus.close()
+                logger.info("✅ Event bus closed")
+            except Exception as e:
+                logger.warning(f"Error closing event bus: {e}")
 
         logger.info(f"👋 Shutting down agent: {config.agent_name}")
 
@@ -191,6 +252,26 @@ def create_app(
             strict_output_validation=strict_output,
         )
     )
+
+    # Register runs router if async runs are enabled AND events package is available
+    if config.enable_async_runs:
+        if _EVENTS_PACKAGE_AVAILABLE:
+            app.include_router(
+                create_runs_router(
+                    config,
+                    state,
+                    verify_auth,
+                    input_model=InputModel,
+                    output_model=OutputModel,
+                )
+            )
+            logger.info("✅ Async runs endpoints registered (/runs)")
+        else:
+            logger.warning(
+                "Async runs enabled but dockrion-events package not installed. "
+                "/runs endpoints will not be available. "
+                "Install with: pip install dockrion-events"
+            )
 
     # Mount static files for logo and assets
     static_dir = Path(__file__).parent / "static"

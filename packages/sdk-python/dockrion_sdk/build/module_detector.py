@@ -221,4 +221,3 @@ def resolve_entrypoint_modules(
                 warnings.append(nested_info.warning)
 
     return directories, files, warnings
-

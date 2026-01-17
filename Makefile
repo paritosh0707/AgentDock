@@ -61,6 +61,7 @@ test:
 	@echo "=== Testing common-py ===" && uv run pytest packages/common-py/tests -q && \
 	echo "=== Testing schema ===" && uv run pytest packages/schema/tests -q && \
 	echo "=== Testing adapters ===" && uv run pytest packages/adapters/tests -q && \
+	echo "=== Testing events ===" && uv run pytest packages/events/tests -q && \
 	echo "=== Testing policy-engine ===" && uv run pytest packages/policy-engine/tests -q && \
 	echo "=== Testing telemetry ===" && uv run pytest packages/telemetry/tests -q && \
 	echo "=== Testing runtime ===" && uv run pytest packages/runtime/tests -q && \
@@ -108,6 +109,9 @@ test-policy:
 
 test-telemetry:
 	uv run pytest packages/telemetry/tests -v
+
+test-events:
+	uv run pytest packages/events/tests -v
 
 # Linting (ignore common acceptable patterns)
 # E501: line too long (handled by formatter)
@@ -168,13 +172,13 @@ build-check: build
 	@echo "Verifying package contents..."
 	@uv run python -c "\
 import zipfile, glob, sys; \
-wheels = glob.glob('dist/*.whl'); \
-wheel = wheels[0] if wheels else sys.exit('No wheel found'); \
+wheels = glob.glob('dist/dockrion-*.whl'); \
+wheel = wheels[0] if wheels else sys.exit('No dockrion wheel found in dist/'); \
 print(f'Checking: {wheel}'); \
 files = zipfile.ZipFile(wheel).namelist(); \
 expected = ['dockrion_common/', 'dockrion_schema/', 'dockrion_adapters/', \
-            'dockrion_policy/', 'dockrion_telemetry/', 'dockrion_runtime/', \
-            'dockrion_sdk/', 'dockrion_cli/']; \
+            'dockrion_events/', 'dockrion_policy/', 'dockrion_telemetry/', \
+            'dockrion_runtime/', 'dockrion_sdk/', 'dockrion_cli/']; \
 missing = [p for p in expected if not any(f.startswith(p) for f in files)]; \
 sys.exit(f'Missing: {missing}') if missing else print('✓ All packages included'); \
 print(f'Total files: {len(files)}')"

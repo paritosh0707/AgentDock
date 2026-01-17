@@ -43,4 +43,3 @@ __all__ = [
     "BuildResolver",
     "BuildResolution",
 ]
-

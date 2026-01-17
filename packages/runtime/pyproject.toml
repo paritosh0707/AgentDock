@@ -29,6 +29,7 @@ dependencies = [
     "dockrion-common>=0.0.1",
     "dockrion-schema>=0.0.1",
     "dockrion-adapters>=0.0.1",
+    "dockrion-events>=0.0.1",
 ]
 
 [project.urls]

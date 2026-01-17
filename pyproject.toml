@@ -3,6 +3,7 @@ members = [
   "packages/common-py",
   "packages/schema",
   "packages/adapters",
+  "packages/events",
   "packages/policy-engine",
   "packages/telemetry",
   "packages/runtime",
@@ -15,6 +16,7 @@ members = [
 dockrion-common = { workspace = true }
 dockrion-schema = { workspace = true }
 dockrion-adapters = { workspace = true }
+dockrion-events = { workspace = true }
 dockrion-policy = { workspace = true }
 dockrion-telemetry = { workspace = true }
 dockrion-runtime = { workspace = true }
@@ -36,6 +38,7 @@ testpaths = [
     "packages/common-py/tests",
     "packages/schema/tests",
     "packages/adapters/tests",
+    "packages/events/tests",
     "packages/policy-engine/tests",
     "packages/telemetry/tests",
     "packages/runtime/tests",
@@ -62,6 +65,7 @@ source = [
     "packages/common-py/dockrion_common",
     "packages/schema/dockrion_schema",
     "packages/adapters/dockrion_adapters",
+    "packages/events/dockrion_events",
     "packages/policy-engine/dockrion_policy",
     "packages/telemetry/dockrion_telemetry",
     "packages/runtime/dockrion_runtime",

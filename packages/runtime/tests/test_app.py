@@ -51,3 +51,29 @@ class TestHealthEndpoint:
         from dockrion_runtime.endpoints import health
 
         assert health is not None
+
+
+class TestEventsPackageDetection:
+    """Test events package availability detection."""
+
+    def test_events_package_flag_exists(self):
+        """Test that _EVENTS_PACKAGE_AVAILABLE flag exists in app module."""
+        from dockrion_runtime.app import _EVENTS_PACKAGE_AVAILABLE
+
+        # Should be True since dockrion_events is installed in this workspace
+        assert isinstance(_EVENTS_PACKAGE_AVAILABLE, bool)
+        assert _EVENTS_PACKAGE_AVAILABLE is True
+
+    def test_runs_router_not_registered_without_events_flag(self):
+        """Verify runs router registration depends on events package availability."""
+        import inspect
+
+        from dockrion_runtime.app import create_app
+
+        # Check the source code contains the guard condition
+        source = inspect.getsource(create_app)
+
+        # Should check _EVENTS_PACKAGE_AVAILABLE before registering runs router
+        assert "_EVENTS_PACKAGE_AVAILABLE" in source
+        assert "if config.enable_async_runs:" in source
+        assert "if _EVENTS_PACKAGE_AVAILABLE:" in source

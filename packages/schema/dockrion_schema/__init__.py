@@ -63,10 +63,15 @@ from .dockfile_v1 import (
     Metadata,
     Observability,
     Policies,
+    RedisStreamingConfig,
     RoleConfig,
     SafetyPolicy,
     SecretDefinition,
     SecretsConfig,
+    StreamingConfig,
+    StreamingConnectionConfig,
+    StreamingEventsConfig,
+    StreamingIdGenerator,
     ToolPolicy,
 )
 
@@ -104,6 +109,12 @@ __all__ = [
     "RoleConfig",
     "ApiKeysConfig",
     "Observability",
+    # Streaming Models
+    "StreamingConfig",
+    "StreamingEventsConfig",
+    "StreamingConnectionConfig",
+    "StreamingIdGenerator",
+    "RedisStreamingConfig",
     # Serialization
     "to_dict",
     "to_yaml_string",

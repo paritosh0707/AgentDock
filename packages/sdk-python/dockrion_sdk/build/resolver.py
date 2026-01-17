@@ -228,7 +228,9 @@ class BuildResolver:
         # Find the entry file
         entry_file = find_entry_file(module_path, self.project_root)
         if not entry_file:
-            self.warnings.append(f"Could not find entry file for '{module_path}' to auto-detect imports")
+            self.warnings.append(
+                f"Could not find entry file for '{module_path}' to auto-detect imports"
+            )
             return directories, files
 
         # Detect imports
@@ -327,15 +329,13 @@ class BuildResolver:
         for d in dirs:
             if matches_pattern(d, excludes):
                 self.warnings.append(
-                    f"'{d}' is in both include and exclude. "
-                    f"Excluding it (exclude takes priority)."
+                    f"'{d}' is in both include and exclude. Excluding it (exclude takes priority)."
                 )
 
         for f in files:
             if matches_pattern(f, excludes):
                 self.warnings.append(
-                    f"'{f}' is in both include and exclude. "
-                    f"Excluding it (exclude takes priority)."
+                    f"'{f}' is in both include and exclude. Excluding it (exclude takes priority)."
                 )
 
     def _validate_existence(
@@ -357,4 +357,3 @@ class BuildResolver:
             file_path = self.project_root / f
             if not file_path.is_file():
                 self.warnings.append(f"File '{f}' does not exist. Docker build may fail.")
-

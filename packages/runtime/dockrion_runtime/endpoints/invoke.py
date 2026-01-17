@@ -182,7 +182,27 @@ def create_invoke_router(
             payload: input_model = Body(..., description="Agent input payload"),  # type: ignore[valid-type]
             auth_context: AuthContext = Depends(auth_dependency),
         ):
-            """Invoke the agent with streaming response (SSE)."""
+            """
+            Invoke the agent with streaming response (SSE).
+
+            This is Pattern A (Direct Streaming): the client receives events
+            in the same connection as the invocation request.
+
+            **Key differences from Pattern B (/runs):**
+            - Uses `request_id` (not `run_id`) - this is a correlation ID only
+            - No server-side persistence - events are not stored
+            - No resumability - if connection drops, events are lost
+            - Lowest latency - direct streaming without EventBus overhead
+
+            For managed runs with persistence, resumability, and event replay,
+            use Pattern B: POST /runs + GET /runs/{run_id}/events
+
+            Event filtering is applied based on Dockfile configuration:
+            - If streaming.events.allowed is configured, only those events are emitted
+            - Mandatory events (started, complete, error, cancelled) are always emitted
+            """
+            import uuid as uuid_module
+
             assert state.metrics is not None
             assert state.policy_engine is not None
             assert state.adapter is not None
@@ -191,7 +211,11 @@ def create_invoke_router(
             metrics = state.metrics
             adapter = state.adapter
 
+            # Get events filter from config
+            events_filter = config.streaming.get_events_filter()
+
             metrics.inc_active()
+            start_time = time.time()
 
             try:
                 # Convert Pydantic model to dict
@@ -204,26 +228,78 @@ def create_invoke_router(
                 # Apply input policies
                 payload_dict = state.policy_engine.validate_input(payload_dict)
 
-                async def event_generator() -> AsyncGenerator[str, None]:
-                    try:
-                        if hasattr(adapter, "invoke_stream"):
-                            async for chunk in adapter.invoke_stream(payload_dict):  # type: ignore[attr-defined]
-                                yield f"data: {json.dumps({'chunk': chunk})}\n\n"
-                        else:
-                            result = adapter.invoke(payload_dict)
-                            yield f"data: {json.dumps({'output': result})}\n\n"
+                # Generate a request ID for client-side correlation
+                # Note: This is NOT a run_id - Pattern A (direct streaming) does not create
+                # persistent runs. Use Pattern B (/runs) for managed runs with resumability.
+                request_id = str(uuid_module.uuid4())
 
-                        yield f"data: {json.dumps({'done': True})}\n\n"
+                async def event_generator() -> AsyncGenerator[str, None]:
+                    nonlocal start_time
+
+                    # Emit started event (mandatory, always allowed)
+                    yield f"event: started\ndata: {json.dumps({'request_id': request_id, 'type': 'started'})}\n\n"
+
+                    try:
+                        # Check if adapter supports streaming
+                        if hasattr(adapter, "invoke_stream"):
+                            # Pass events_filter to adapter for filtering at source
+                            async for chunk in adapter.invoke_stream(  # type: ignore[attr-defined]
+                                payload_dict,
+                                events_filter=events_filter,
+                            ):
+                                if isinstance(chunk, dict):
+                                    event_type = chunk.get("type", "step")
+
+                                    # Check if this event type is allowed
+                                    if events_filter is not None:
+                                        custom_name = chunk.get("event_type") if event_type == "custom" else None
+                                        if not events_filter.is_allowed(event_type, custom_name):
+                                            continue
+
+                                    chunk["request_id"] = request_id
+                                    yield f"event: {event_type}\ndata: {json.dumps(chunk)}\n\n"
+                                else:
+                                    # Token event
+                                    if events_filter is None or events_filter.is_allowed("token"):
+                                        yield f"event: token\ndata: {json.dumps({'request_id': request_id, 'content': str(chunk)})}\n\n"
+                        else:
+                            # Non-streaming adapter: invoke and emit result
+                            result = adapter.invoke(payload_dict)
+
+                            # Apply output policies
+                            result = state.policy_engine.apply_output_policies(result)
+
+                            latency = time.time() - start_time
+
+                            # Emit complete event (mandatory, always allowed)
+                            yield f"event: complete\ndata: {json.dumps({'request_id': request_id, 'type': 'complete', 'output': result, 'latency_seconds': round(latency, 3)})}\n\n"
+
+                            metrics.inc_request("invoke", "success")
+                            metrics.observe_latency("invoke", latency)
+                            return
+
+                        # If we used streaming, emit complete at the end (mandatory)
+                        latency = time.time() - start_time
+                        yield f"event: complete\ndata: {json.dumps({'request_id': request_id, 'type': 'complete', 'latency_seconds': round(latency, 3)})}\n\n"
+                        metrics.inc_request("invoke", "success")
+                        metrics.observe_latency("invoke", latency)
 
                     except Exception as e:
-                        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+                        metrics.inc_request("invoke", "error")
+                        logger.error(f"Streaming invoke error: {e}", exc_info=True)
+                        # Error event is mandatory, always emitted
+                        yield f"event: error\ndata: {json.dumps({'request_id': request_id, 'type': 'error', 'error': str(e), 'code': 'INTERNAL_ERROR'})}\n\n"
                     finally:
                         metrics.dec_active()
 
                 return StreamingResponse(
                     event_generator(),
                     media_type="text/event-stream",
-                    headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+                    headers={
+                        "Cache-Control": "no-cache",
+                        "Connection": "keep-alive",
+                        "X-Accel-Buffering": "no",  # Disable nginx buffering
+                    },
                 )
 
             except Exception as e:

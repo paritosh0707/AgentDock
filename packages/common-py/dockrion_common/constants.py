@@ -274,6 +274,51 @@ Patterns = _Patterns()
 
 
 # =============================================================================
+# STREAMING DEFAULTS
+# =============================================================================
+
+
+@dataclass(frozen=True)
+class _StreamingDefaults:
+    """
+    Centralized streaming configuration defaults.
+
+    This is the single source of truth for streaming defaults.
+    All packages should import and use these values.
+
+    Usage:
+        from dockrion_common.constants import StreamingDefaults
+
+        heartbeat = StreamingDefaults.HEARTBEAT_INTERVAL
+        timeout = StreamingDefaults.DEFAULT_TIMEOUT
+    """
+
+    # Event configuration
+    HEARTBEAT_INTERVAL: int = 15  # seconds
+    MAX_RUN_DURATION: int = 3600  # 1 hour
+
+    # Connection settings
+    DEFAULT_TIMEOUT: int = 300  # 5 minutes
+    MAX_SUBSCRIBERS: int = 100
+
+    # Backend settings
+    STREAM_TTL: int = 3600  # 1 hour event retention
+    MAX_EVENTS_PER_RUN: int = 1000
+    CONNECTION_POOL_SIZE: int = 10
+
+    # Backend types
+    BACKEND_MEMORY: str = "memory"
+    BACKEND_REDIS: str = "redis"
+
+    # ID generator types
+    ID_GENERATOR_UUID: str = "uuid"
+    ID_GENERATOR_CUSTOM: str = "custom"
+
+
+StreamingDefaults = _StreamingDefaults()
+
+
+# =============================================================================
 # HTTP STATUS CODES
 # =============================================================================
 
