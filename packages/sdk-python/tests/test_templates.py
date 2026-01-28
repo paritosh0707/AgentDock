@@ -365,29 +365,24 @@ expose:
         assert "2.0.0" in dockerfile
         assert "test@example.com" in dockerfile
 
-    def test_dockerfile_dev_mode(self, sample_dockfile):
-        """Test Dockerfile generation in dev mode."""
+    def test_dockerfile_local_pypi(self, sample_dockfile):
+        """Test Dockerfile generation with local PyPI server."""
         from dockrion_sdk import load_dockspec
         from dockrion_sdk.templates import TemplateRenderer
 
         spec = load_dockspec(sample_dockfile)
 
-        # Use TemplateRenderer directly with proper context
+        # Use TemplateRenderer directly with local_pypi_url
         renderer = TemplateRenderer()
-        from dockrion_sdk.templates.renderer import TemplateContext
 
-        ctx_builder = TemplateContext(spec)
-        context = ctx_builder.build()
+        dockerfile = renderer.render_dockerfile(
+            spec,
+            local_pypi_url="http://host.docker.internal:8099/simple/",
+        )
 
-        # Add dev mode settings to context
-        context["dev_mode"] = True
-        context["local_packages"] = [
-            {"name": "dockrion-common", "path": "packages/common-py"},
-            {"name": "dockrion-schema", "path": "packages/schema"},
-        ]
-
-        dockerfile = renderer.render("dockerfiles/Dockerfile.j2", context)
-
-        # Dev mode should copy local packages
-        assert "Development mode" in dockerfile or "local packages" in dockerfile.lower()
-        assert "packages/common-py" in dockerfile
+        # Local PyPI mode should include index-url, trusted-host, and dockrion package
+        assert "--index-url http://host.docker.internal:8099/simple/" in dockerfile
+        assert "--trusted-host host.docker.internal" in dockerfile
+        assert "dockrion" in dockerfile
+        # Should NOT include extra-index-url (we install only from local PyPI)
+        assert "--extra-index-url" not in dockerfile

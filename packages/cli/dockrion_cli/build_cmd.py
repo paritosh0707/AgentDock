@@ -31,8 +31,11 @@ def build(
     allow_missing_secrets: bool = typer.Option(
         False, "--allow-missing-secrets", help="Continue build even if required secrets are missing"
     ),
-    dev: bool = typer.Option(
-        False, "--dev", help="Development mode: use local PyPI server for Dockrion packages"
+    use_local_dockrion_packages: bool = typer.Option(
+        False,
+        "--use-local-dockrion-packages",
+        hidden=True,
+        help="Install Dockrion packages from local PyPI server (framework developers only)",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Show detailed output"),
 ):
@@ -54,12 +57,8 @@ def build(
     Use --allow-missing-secrets to build even if required secrets are not set
     (the secrets must be provided at container runtime).
 
-    Use --dev for development builds that use local Dockrion packages via a
-    local PyPI server (requires wheel files in dist/ directory).
-
     Examples:
         dockrion build
-        dockrion build --dev                      # Development mode
         dockrion build custom/Dockfile.yaml
         dockrion build --env-file ./secrets/.env.local
         dockrion build --allow-missing-secrets
@@ -141,8 +140,8 @@ def build(
             info("This may take a few minutes...")
 
         # Build image
-        if dev:
-            info("Development mode: Using local PyPI server for Dockrion packages")
+        if use_local_dockrion_packages:
+            info("Using local PyPI server for Dockrion packages")
 
         with console.status("[bold green]Building Docker image..."):
             result = deploy(
@@ -152,7 +151,7 @@ def build(
                 no_cache=no_cache,
                 env_file=env_file,
                 allow_missing_secrets=allow_missing_secrets,
-                dev=dev,
+                use_local_dockrion_packages=use_local_dockrion_packages,
             )
 
         # Show success

@@ -10,6 +10,7 @@ Provides deployment functionality for Dockrion agents:
 Uses the template system for generating all deployment artifacts.
 """
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -25,8 +26,9 @@ from ..utils.package_manager import (
     install_requirements,
     print_uv_setup_instructions,
 )
-from ..utils.workspace import detect_local_packages, find_workspace_root, get_relative_agent_path
+from ..utils.workspace import find_workspace_root, get_relative_agent_path
 from .docker import check_docker_available, docker_build
+from .pypi_server import DEFAULT_PYPI_PORT, check_local_pypi_available, get_local_pypi_url
 from .runtime_gen import ensure_runtime_dir, write_runtime_files
 
 logger = get_logger(__name__)
@@ -50,7 +52,7 @@ def deploy(
     no_cache: bool = False,
     env_file: Optional[str] = None,
     allow_missing_secrets: bool = False,
-    dev: bool = False,
+    use_local_dockrion_packages: bool = False,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """
@@ -66,7 +68,8 @@ def deploy(
         no_cache: If True, build without Docker cache
         env_file: Optional explicit path to .env file
         allow_missing_secrets: If True, continue even if required secrets are missing
-        dev: If True, use local PyPI server for Dockrion packages (development mode)
+        use_local_dockrion_packages: If True, install Dockrion packages from local
+            PyPI server (for framework development only)
         **kwargs: Additional deployment options
 
     Returns:
@@ -138,35 +141,25 @@ def deploy(
         build_context = "."
         logger.info("No workspace root found, using current directory as build context")
 
-    # Handle development mode
-    dev_mode = dev
-    local_packages = None
-
-    if dev_mode and not workspace_root:
-        logger.warning(
-            "Development mode requested but not in a workspace. Falling back to PyPI installation."
-        )
-        dev_mode = False
-
-    if dev_mode and workspace_root:
-        # Detect local Dockrion packages in the workspace
-        local_packages = detect_local_packages(workspace_root)
-        if local_packages:
-            logger.info(f"Development mode: Found {len(local_packages)} local packages to install")
-        else:
-            logger.warning(
-                "Development mode: No local Dockrion packages found in workspace. "
-                "Falling back to PyPI installation."
+    # Handle local PyPI server mode (for framework developers)
+    local_pypi_url = None
+    if use_local_dockrion_packages:
+        pypi_port = int(os.environ.get("DOCKRION_LOCAL_PYPI_PORT", DEFAULT_PYPI_PORT))
+        if not check_local_pypi_available(pypi_port):
+            raise DockrionError(
+                f"Local PyPI server not running on port {pypi_port}.\n"
+                "Start it first with: make pypi-local\n"
+                "Or set DOCKRION_LOCAL_PYPI_PORT if using a different port."
             )
-            dev_mode = False
+        local_pypi_url = get_local_pypi_url(pypi_port)
+        logger.info(f"Using local PyPI server at {local_pypi_url}")
 
     try:
-        # Generate Dockerfile with correct paths and dev mode settings
+        # Generate Dockerfile with correct paths
         dockerfile_content = renderer.render_dockerfile(
             spec,
             agent_path=relative_agent_path,
-            dev_mode=dev_mode,
-            local_packages=local_packages,
+            local_pypi_url=local_pypi_url,
             project_root=agent_dir,
         )
 

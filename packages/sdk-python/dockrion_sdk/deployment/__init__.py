@@ -12,6 +12,7 @@ Modules for building and deploying Dockrion agents:
 from .deploy import DOCKRION_IMAGE_PREFIX, deploy, generate_runtime, run_local
 from .docker import check_docker_available, docker_build, docker_logs, docker_run, docker_stop
 from .pypi_server import (
+    check_local_pypi_available,
     find_available_port,
     get_local_pypi_url,
     start_local_pypi_server,
@@ -41,4 +42,5 @@ __all__ = [
     "stop_local_pypi_server",
     "find_available_port",
     "get_local_pypi_url",
+    "check_local_pypi_available",
 ]

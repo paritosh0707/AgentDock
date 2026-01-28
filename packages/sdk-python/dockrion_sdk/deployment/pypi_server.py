@@ -118,10 +118,30 @@ def get_local_pypi_url(port: int) -> str:
     return f"http://host.docker.internal:{port}/simple/"
 
 
+def check_local_pypi_available(port: int = DEFAULT_PYPI_PORT) -> bool:
+    """
+    Check if local PyPI server is running and accessible.
+
+    Args:
+        port: Port to check (default: DEFAULT_PYPI_PORT)
+
+    Returns:
+        True if server is accessible, False otherwise
+    """
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.settimeout(2)
+            s.connect(("127.0.0.1", port))
+            return True
+    except (socket.error, ConnectionRefusedError):
+        return False
+
+
 __all__ = [
     "find_available_port",
     "start_local_pypi_server",
     "stop_local_pypi_server",
     "get_local_pypi_url",
+    "check_local_pypi_available",
     "DEFAULT_PYPI_PORT",
 ]
